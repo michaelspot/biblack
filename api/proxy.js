@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     await new Promise((resolve, reject) => {
       https.get(url, (response) => {
         if (response.statusCode !== 200) {
-          reject(new Error(`HTTP ${response.statusCode}`));
+          reject(new Error(`Erreur serveur (code ${response.statusCode})`));
           return;
         }
 
@@ -42,6 +42,6 @@ export default async function handler(req, res) {
     res.status(200).send(buffer);
   } catch (error) {
     console.error("Proxy error:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: `Erreur lors du téléchargement de la vidéo : ${error.message}` });
   }
 }

@@ -946,7 +946,7 @@
         const response = await fetch(proxyUrl);
 
         if (!response.ok) {
-          throw new Error(`Erreur ${response.status}`);
+          throw new Error(`Impossible de télécharger la vidéo (erreur ${response.status})`);
         }
 
         statusDiv.textContent = "Préparation du partage...";
@@ -1033,7 +1033,7 @@
         const data = await res.json();
 
         if (!res.ok) throw new Error(data.error);
-        if (!data.url) throw new Error('URL non reçue');
+        if (!data.url) throw new Error('La vidéo a été générée mais l\'URL n\'a pas été reçue. Réessaye.');
 
         stopTimers();
         progressBar.style.width = '100%';

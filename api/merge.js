@@ -143,11 +143,15 @@ export default async function handler(req, res) {
 
     let errorMsg = error.message;
     if (error.message.includes("introuvable")) {
-      if (error.message.includes("/hooks/")) {
-        errorMsg = `Fichier hook "${hook}" introuvable.`;
+      if (error.message.includes("/hooks-")) {
+        errorMsg = `Fichier hook "${hook}" introuvable dans le dossier "${prefix}". Vérifie que le fichier existe.`;
       } else if (error.message.includes("/captures/")) {
-        errorMsg = `Fichier capture "${capture}" introuvable.`;
+        errorMsg = `Fichier capture "${capture}" introuvable. Vérifie que le fichier existe.`;
       }
+    } else if (error.message.includes("FFmpeg") || error.message.includes("ffmpeg")) {
+      errorMsg = `Erreur lors du montage vidéo. Le format des fichiers est peut-être incompatible.`;
+    } else if (error.message.includes("sortie n'a pas été créé")) {
+      errorMsg = `Le montage a échoué. Vérifie que les fichiers vidéo sont valides.`;
     }
 
     res.status(400).json({ error: errorMsg });
