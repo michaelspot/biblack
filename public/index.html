@@ -102,7 +102,45 @@
     .subtitle {
       color: #666;
       font-size: 14px;
-      margin-bottom: 40px;
+      margin-bottom: 20px;
+    }
+
+    .category-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 32px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      padding-bottom: 4px;
+    }
+
+    .category-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .category-tab {
+      padding: 10px 18px;
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 20px;
+      color: #666;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .category-tab:hover {
+      border-color: #444;
+      color: #999;
+    }
+
+    .category-tab.active {
+      background: #fff;
+      border-color: #fff;
+      color: #000;
     }
 
     .section {
@@ -496,6 +534,13 @@
     </div>
     <p class="subtitle">Fusionne hooks et captures automatiquement</p>
 
+    <div class="category-tabs" id="categoryTabs">
+      <button class="category-tab active" data-category="snapchat">Snapchat</button>
+      <button class="category-tab" data-category="surprised">Surprised</button>
+      <button class="category-tab" data-category="shocked">Shocked</button>
+      <button class="category-tab" data-category="dynamic">Dynamic</button>
+    </div>
+
     <div id="loading" class="loading">Chargement...</div>
 
     <div id="app" class="hidden">
@@ -576,11 +621,19 @@
   <script>
     let hooks = [];
     let captures = [];
+    let currentCategory = 'snapchat';
     let countdownInterval = null;
     let progressInterval = null;
     let isGenerating = false;
 
     const ESTIMATED_TIME = 30;
+
+    const categoryPrefixes = {
+      snapchat: 'hooks-snapchat/',
+      surprised: 'hooks-surprised-face/',
+      shocked: 'hooks-shocked-face/',
+      dynamic: 'hooks-dynamic/',
+    };
 
     // Elements
     const app = document.getElementById('app');
@@ -616,10 +669,9 @@
         hooks = data.hooks;
         captures = data.captures;
 
-        populateSelect(hookSelect, hooks);
+        updateHookSelect();
         populateSelect(captureSelect, captures);
 
-        document.getElementById('hookCount').textContent = `${hooks.length} fichiers`;
         document.getElementById('captureCount').textContent = `${captures.length} fichiers`;
 
         loading.classList.add('hidden');
@@ -628,6 +680,35 @@
         loading.textContent = 'Erreur: ' + err.message;
       }
     }
+
+    // Filter hooks by category
+    function getFilteredHooks() {
+      return hooks.filter(h => h.category === currentCategory);
+    }
+
+    function updateHookSelect() {
+      const filtered = getFilteredHooks();
+      populateSelect(hookSelect, filtered);
+      document.getElementById('hookCount').textContent = `${filtered.length} fichiers`;
+      hookPreviewBtn.disabled = true;
+    }
+
+    // Category tabs
+    function switchCategory(category) {
+      currentCategory = category;
+      // Update active tab
+      document.querySelectorAll('.category-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.category === category);
+      });
+      updateHookSelect();
+    }
+
+    // Setup category tabs
+    document.getElementById('categoryTabs').addEventListener('click', (e) => {
+      if (e.target.classList.contains('category-tab')) {
+        switchCategory(e.target.dataset.category);
+      }
+    });
 
     // Refresh
     async function refresh() {
@@ -643,6 +724,8 @@
         opt.value = item.name;
         opt.textContent = item.name;
         opt.dataset.url = item.url;
+        if (item.prefix) opt.dataset.prefix = item.prefix;
+        if (item.category) opt.dataset.category = item.category;
         select.appendChild(opt);
       });
     }
@@ -666,8 +749,9 @@
 
     // Random
     function selectRandom() {
-      if (hooks.length && captures.length) {
-        hookSelect.value = hooks[Math.floor(Math.random() * hooks.length)].name;
+      const filteredHooks = getFilteredHooks();
+      if (filteredHooks.length && captures.length) {
+        hookSelect.value = filteredHooks[Math.floor(Math.random() * filteredHooks.length)].name;
         captureSelect.value = captures[Math.floor(Math.random() * captures.length)].name;
         hookPreviewBtn.disabled = false;
         capturePreviewBtn.disabled = false;
@@ -928,6 +1012,8 @@
     async function generate() {
       const hook = hookSelect.value;
       const capture = captureSelect.value;
+      const selectedOption = hookSelect.options[hookSelect.selectedIndex];
+      const hookPrefix = selectedOption.dataset.prefix || categoryPrefixes[currentCategory];
 
       if (!hook || !capture) {
         showError('Sélectionne un hook et une capture.');
@@ -942,7 +1028,7 @@
       startProgress();
 
       try {
-        const url = `/api/merge?hook=${encodeURIComponent(hook)}&capture=${encodeURIComponent(capture)}`;
+        const url = `/api/merge?hook=${encodeURIComponent(hook)}&capture=${encodeURIComponent(capture)}&hookPrefix=${encodeURIComponent(hookPrefix)}`;
         const res = await fetch(url);
         const data = await res.json();
 
@@ -966,16 +1052,18 @@
       }
     }
 
-    // Generate all combinations
+    // Generate all combinations (only for current category)
     async function generateAll() {
-      if (hooks.length === 0 || captures.length === 0) {
-        showError('Pas de fichiers disponibles.');
+      const filteredHooks = getFilteredHooks();
+
+      if (filteredHooks.length === 0 || captures.length === 0) {
+        showError('Pas de fichiers disponibles dans cette catégorie.');
         return;
       }
 
-      const total = hooks.length * captures.length;
+      const total = filteredHooks.length * captures.length;
 
-      if (!confirm(`Générer ${total} vidéos ?`)) return;
+      if (!confirm(`Générer ${total} vidéos (catégorie ${currentCategory}) ?`)) return;
 
       resetUI();
       result.innerHTML = '';
@@ -986,7 +1074,7 @@
       let completed = 0;
       let errors = 0;
 
-      for (const hook of hooks) {
+      for (const hook of filteredHooks) {
         for (const capture of captures) {
           if (!isGenerating) break;
 
@@ -994,7 +1082,8 @@
           startProgress(25);
 
           try {
-            const url = `/api/merge?hook=${encodeURIComponent(hook.name)}&capture=${encodeURIComponent(capture.name)}`;
+            const hookPrefix = hook.prefix || categoryPrefixes[currentCategory];
+            const url = `/api/merge?hook=${encodeURIComponent(hook.name)}&capture=${encodeURIComponent(capture.name)}&hookPrefix=${encodeURIComponent(hookPrefix)}`;
             const res = await fetch(url);
             const data = await res.json();
 

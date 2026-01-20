@@ -49,11 +49,14 @@ function downloadFile(url, destPath) {
 }
 
 export default async function handler(req, res) {
-  const { hook, capture } = req.query;
+  const { hook, capture, hookPrefix } = req.query;
 
   if (!hook || !capture) {
     return res.status(400).json({ error: "Il manque le hook ou la capture." });
   }
+
+  // Par défaut hooks-snapchat si pas de préfixe spécifié
+  const prefix = hookPrefix || "hooks-snapchat/";
 
   const timestamp = Date.now();
   const hookPath = `/tmp/hook-${timestamp}${path.extname(hook)}`;
@@ -64,7 +67,7 @@ export default async function handler(req, res) {
     // Télécharge les deux fichiers en parallèle
     console.log("Téléchargement des fichiers...");
     await Promise.all([
-      downloadFile(`${publicBaseUrl}/hooks/${hook}`, hookPath),
+      downloadFile(`${publicBaseUrl}/${prefix}${hook}`, hookPath),
       downloadFile(`${publicBaseUrl}/captures/${capture}`, capturePath),
     ]);
     console.log("Fichiers téléchargés");
