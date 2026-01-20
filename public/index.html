@@ -850,46 +850,51 @@
     }
 
     async function shareVideo(url, name) {
+      const statusDiv = document.getElementById('statusText');
+      const statusEl = document.getElementById('status');
+
       try {
-        const statusDiv = document.getElementById('statusText');
-        const originalStatus = statusDiv.textContent;
+        statusDiv.textContent = "Téléchargement de la vidéo...";
+        statusEl.classList.add('visible');
+
+        // Utilise notre proxy API pour éviter les erreurs CORS
+        const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl);
+
+        if (!response.ok) {
+          throw new Error(`Erreur ${response.status}`);
+        }
+
         statusDiv.textContent = "Préparation du partage...";
-        document.getElementById('status').classList.add('visible');
-
-        // 1. Télécharge la vidéo en mémoire (Blob)
-        const response = await fetch(url);
         const blob = await response.blob();
-
-        // 2. Crée un objet File que iOS reconnaît comme une vidéo
         const file = new File([blob], `${name}.mp4`, { type: 'video/mp4' });
 
-        // 3. Vérifie si le partage de fichiers est supporté (iOS 15+)
+        statusEl.classList.remove('visible');
+
+        // Partage le fichier si supporté (iOS 15+)
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          statusDiv.textContent = originalStatus;
-          document.getElementById('status').classList.remove('visible');
           await navigator.share({
             files: [file],
             title: 'Biblack Video',
           });
         } else if (navigator.share) {
           // Fallback: partage l'URL
-          statusDiv.textContent = originalStatus;
-          document.getElementById('status').classList.remove('visible');
           await navigator.share({
             title: 'Biblack Video',
             url: url
           });
         } else {
-          // Fallback: copie dans le presse-papier
-          statusDiv.textContent = originalStatus;
-          document.getElementById('status').classList.remove('visible');
           await navigator.clipboard.writeText(url);
           alert('Lien copié !');
         }
       } catch (err) {
-        document.getElementById('status').classList.remove('visible');
-        if (err.name !== 'AbortError') {
-          console.error('Erreur de partage:', err);
+        statusEl.classList.remove('visible');
+        if (err.name === 'AbortError') {
+          return; // L'utilisateur a annulé
+        }
+        console.error('Erreur de partage:', err);
+        // Fallback: ouvre directement l'URL
+        if (confirm('Erreur lors du téléchargement. Ouvrir la vidéo dans le navigateur ?')) {
           window.open(url, '_blank');
         }
       }
