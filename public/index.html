@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>Biblack</title>
+
+  <!-- PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Biblack">
+  <meta name="theme-color" content="#000000">
+
+  <!-- PWA Icons -->
+  <link rel="apple-touch-icon" href="/icon.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icon.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="/icon.png">
+  <link rel="icon" type="image/png" href="/icon.png">
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+      background: #000;
+      color: #fff;
+    }
+
+    .app-wrapper {
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .app-wrapper::-webkit-scrollbar {
+      display: none;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      padding-bottom: 120px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+
+    .btn-refresh {
+      width: 40px;
+      height: 40px;
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 8px;
+      color: #888;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .btn-refresh:hover {
+      border-color: #444;
+      color: #fff;
+    }
+
+    .btn-refresh.spinning {
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 40px;
+    }
+
+    .section {
+      margin-bottom: 32px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #888;
+    }
+
+    .file-count {
+      font-size: 12px;
+      color: #444;
+    }
+
+    select {
+      width: 100%;
+      min-width: 0;
+      padding: 16px;
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 15px;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23666' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      text-overflow: ellipsis;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #444;
+    }
+
+    .select-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .select-row select {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .btn-preview {
+      padding: 16px;
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 8px;
+      color: #666;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn-preview:hover {
+      border-color: #444;
+      color: #888;
+    }
+
+    .btn-preview:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .drop-zone {
+      border: 1px dashed #333;
+      border-radius: 8px;
+      padding: 20px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: #666;
+      background: #111;
+    }
+
+    .drop-zone-icon {
+      font-size: 18px;
+    }
+
+    .drop-zone-text {
+      color: #555;
+      font-size: 13px;
+    }
+
+    .drop-zone-text span {
+      color: #888;
+      text-decoration: underline;
+    }
+
+    /* Desktop buttons */
+    .buttons-desktop {
+      display: flex;
+      gap: 8px;
+      margin-top: 32px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 16px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: #fff;
+      color: #000;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #e0e0e0;
+    }
+
+    .btn-secondary {
+      background: #222;
+      color: #fff;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #333;
+    }
+
+    .btn-auto {
+      background: #111;
+      color: #fff;
+      border: 1px solid #333;
+    }
+
+    .btn-auto:hover:not(:disabled) {
+      border-color: #555;
+    }
+
+    /* Mobile footer */
+    .footer-menu {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #111;
+      border-top: 1px solid #222;
+      padding: 12px 16px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      z-index: 100;
+    }
+
+    .footer-menu .buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .footer-menu .btn {
+      padding: 14px 20px;
+    }
+
+    .status {
+      margin-top: 32px;
+      padding: 24px;
+      background: #111;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .status.visible {
+      display: block;
+    }
+
+    .status-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .time-left {
+      font-size: 24px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .status-text {
+      font-size: 13px;
+      color: #666;
+    }
+
+    .progress-bar-container {
+      height: 4px;
+      background: #222;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: #fff;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .result {
+      margin-top: 32px;
+      display: none;
+    }
+
+    .result.visible {
+      display: block;
+    }
+
+    .result-item {
+      padding: 16px;
+      background: #111;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .result-name {
+      font-size: 13px;
+      color: #888;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      word-break: break-all;
+    }
+
+    .result-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .result-btn {
+      padding: 8px 12px;
+      background: #222;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .result-btn:hover {
+      background: #333;
+    }
+
+    .result-preview {
+      margin-top: 12px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #000;
+    }
+
+    .result-preview video {
+      width: 100%;
+      max-height: 300px;
+      object-fit: contain;
+    }
+
+    .error {
+      margin-top: 32px;
+      padding: 16px;
+      background: #1a0000;
+      border: 1px solid #330000;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .error.visible {
+      display: block;
+    }
+
+    .error-text {
+      color: #ff4444;
+      font-size: 14px;
+    }
+
+    .loading {
+      color: #444;
+      font-size: 14px;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .auto-progress {
+      margin-top: 16px;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 640px) {
+      body {
+        padding: 24px 16px;
+        padding-bottom: 100px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .buttons-desktop {
+        display: none;
+      }
+
+      .footer-menu {
+        display: block;
+      }
+
+      .section {
+        margin-bottom: 24px;
+      }
+
+      .drop-zone {
+        padding: 20px;
+      }
+
+      .result-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .result-name {
+        white-space: normal;
+      }
+
+      .result-actions {
+        width: 100%;
+      }
+
+      .result-btn {
+        flex: 1;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+  <div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h1>Biblack</h1>
+      <button class="btn-refresh" onclick="refresh()" id="refreshBtn" title="Rafraîchir">↻</button>
+    </div>
+    <p class="subtitle">Fusionne hooks et captures automatiquement</p>
+
+    <div id="loading" class="loading">Chargement...</div>
+
+    <div id="app" class="hidden">
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">Hook</span>
+          <span class="file-count" id="hookCount"></span>
+        </div>
+        <div class="select-row">
+          <select id="hook">
+            <option value="">Sélectionner...</option>
+          </select>
+          <button class="btn-preview" id="hookPreviewBtn" disabled onclick="openPreview('hook')">Aperçu</button>
+        </div>
+        <div class="drop-zone" id="hookDropZone" data-type="hook">
+          <span class="drop-zone-icon">+</span>
+          <div class="drop-zone-text">Ajouter un hook</div>
+          <input type="file" accept="video/*" style="display:none" id="hookFileInput">
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">Capture</span>
+          <span class="file-count" id="captureCount"></span>
+        </div>
+        <div class="select-row">
+          <select id="capture">
+            <option value="">Sélectionner...</option>
+          </select>
+          <button class="btn-preview" id="capturePreviewBtn" disabled onclick="openPreview('capture')">Aperçu</button>
+        </div>
+        <div class="drop-zone" id="captureDropZone" data-type="capture">
+          <span class="drop-zone-icon">+</span>
+          <div class="drop-zone-text">Ajouter une capture</div>
+          <input type="file" accept="video/*" style="display:none" id="captureFileInput">
+        </div>
+      </div>
+
+      <!-- Desktop buttons -->
+      <div class="buttons-desktop">
+        <button class="btn btn-secondary" id="randomBtnDesktop" onclick="selectRandom()">Aléatoire</button>
+        <button class="btn btn-primary" id="generateBtnDesktop" onclick="generate()">Générer</button>
+      </div>
+
+      <div class="buttons-desktop" style="margin-top: 8px;">
+        <button class="btn btn-auto" id="autoBtnDesktop" onclick="generateAll()">Full Auto - Toutes les combinaisons</button>
+      </div>
+
+      <div class="status" id="status">
+        <div class="status-header">
+          <span class="time-left" id="timeLeft">30s</span>
+          <span class="status-text" id="statusText">Préparation...</span>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="auto-progress" id="autoProgress"></div>
+      </div>
+
+      <div class="result" id="result"></div>
+
+      <div class="error" id="error">
+        <div class="error-text" id="errorText"></div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <!-- Mobile footer menu -->
+  <div class="footer-menu" id="footerMenu">
+    <div class="buttons">
+      <button class="btn btn-secondary" id="randomBtnMobile" onclick="selectRandom()">Aléatoire</button>
+      <button class="btn btn-primary" id="generateBtnMobile" onclick="generate()">Générer</button>
+    </div>
+  </div>
+
+  <script>
+    let hooks = [];
+    let captures = [];
+    let countdownInterval = null;
+    let progressInterval = null;
+    let isGenerating = false;
+
+    const ESTIMATED_TIME = 30;
+
+    // Elements
+    const app = document.getElementById('app');
+    const loading = document.getElementById('loading');
+    const hookSelect = document.getElementById('hook');
+    const captureSelect = document.getElementById('capture');
+    const status = document.getElementById('status');
+    const progressBar = document.getElementById('progressBar');
+    const statusText = document.getElementById('statusText');
+    const timeLeft = document.getElementById('timeLeft');
+    const autoProgress = document.getElementById('autoProgress');
+    const result = document.getElementById('result');
+    const error = document.getElementById('error');
+    const errorText = document.getElementById('errorText');
+    const hookPreviewBtn = document.getElementById('hookPreviewBtn');
+    const capturePreviewBtn = document.getElementById('capturePreviewBtn');
+    const footerMenu = document.getElementById('footerMenu');
+
+    // All buttons (desktop + mobile)
+    const generateBtns = [document.getElementById('generateBtnDesktop'), document.getElementById('generateBtnMobile')];
+    const randomBtns = [document.getElementById('randomBtnDesktop'), document.getElementById('randomBtnMobile')];
+    const autoBtns = [document.getElementById('autoBtnDesktop')];
+
+    const refreshBtn = document.getElementById('refreshBtn');
+
+    // Load files
+    async function loadFiles() {
+      try {
+        const res = await fetch('/api/list');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        hooks = data.hooks;
+        captures = data.captures;
+
+        populateSelect(hookSelect, hooks);
+        populateSelect(captureSelect, captures);
+
+        document.getElementById('hookCount').textContent = `${hooks.length} fichiers`;
+        document.getElementById('captureCount').textContent = `${captures.length} fichiers`;
+
+        loading.classList.add('hidden');
+        app.classList.remove('hidden');
+      } catch (err) {
+        loading.textContent = 'Erreur: ' + err.message;
+      }
+    }
+
+    // Refresh
+    async function refresh() {
+      refreshBtn.classList.add('spinning');
+      await loadFiles();
+      refreshBtn.classList.remove('spinning');
+    }
+
+    function populateSelect(select, items) {
+      select.innerHTML = '<option value="">Sélectionner...</option>';
+      items.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.name;
+        opt.textContent = item.name;
+        opt.dataset.url = item.url;
+        select.appendChild(opt);
+      });
+    }
+
+    // Preview
+    hookSelect.addEventListener('change', () => {
+      hookPreviewBtn.disabled = !hookSelect.value;
+    });
+
+    captureSelect.addEventListener('change', () => {
+      capturePreviewBtn.disabled = !captureSelect.value;
+    });
+
+    function openPreview(type) {
+      const select = type === 'hook' ? hookSelect : captureSelect;
+      const selected = select.options[select.selectedIndex];
+      if (selected.dataset.url) {
+        window.open(selected.dataset.url, '_blank');
+      }
+    }
+
+    // Random
+    function selectRandom() {
+      if (hooks.length && captures.length) {
+        hookSelect.value = hooks[Math.floor(Math.random() * hooks.length)].name;
+        captureSelect.value = captures[Math.floor(Math.random() * captures.length)].name;
+        hookPreviewBtn.disabled = false;
+        capturePreviewBtn.disabled = false;
+      }
+    }
+
+    // Drag & Drop
+    function setupDropZone(dropZone, fileInput, type) {
+      dropZone.addEventListener('click', () => fileInput.click());
+
+      dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+      });
+
+      dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('drag-over');
+      });
+
+      dropZone.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (file) await uploadFile(file, type);
+      });
+
+      fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (file) await uploadFile(file, type);
+      });
+    }
+
+    async function uploadFile(file, type) {
+      const dropZone = document.getElementById(`${type}DropZone`);
+      const originalText = dropZone.innerHTML;
+      dropZone.innerHTML = '<span class="drop-zone-icon">...</span><div class="drop-zone-text">Upload en cours</div>';
+
+      try {
+        const base64 = await fileToBase64(file);
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            filename: file.name,
+            type: type,
+            data: base64.split(',')[1]
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        await loadFiles();
+
+        const select = type === 'hook' ? hookSelect : captureSelect;
+        select.value = file.name;
+        select.dispatchEvent(new Event('change'));
+
+        dropZone.innerHTML = originalText;
+      } catch (err) {
+        dropZone.innerHTML = originalText;
+        showError(err.message);
+      }
+    }
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+      });
+    }
+
+    setupDropZone(
+      document.getElementById('hookDropZone'),
+      document.getElementById('hookFileInput'),
+      'hook'
+    );
+
+    setupDropZone(
+      document.getElementById('captureDropZone'),
+      document.getElementById('captureFileInput'),
+      'capture'
+    );
+
+    // Progress
+    function stopTimers() {
+      if (countdownInterval) clearInterval(countdownInterval);
+      if (progressInterval) clearInterval(progressInterval);
+      countdownInterval = null;
+      progressInterval = null;
+    }
+
+    function startProgress(duration = ESTIMATED_TIME) {
+      stopTimers();
+      let secondsLeft = duration;
+      let progress = 0;
+
+      timeLeft.textContent = `${secondsLeft}s`;
+      progressBar.style.width = '0%';
+
+      countdownInterval = setInterval(() => {
+        secondsLeft--;
+        if (secondsLeft >= 0) timeLeft.textContent = `${secondsLeft}s`;
+      }, 1000);
+
+      const step = 95 / (duration * 20);
+      progressInterval = setInterval(() => {
+        progress += step;
+        if (progress <= 95) progressBar.style.width = `${progress}%`;
+      }, 50);
+    }
+
+    function showStatus(text) {
+      status.classList.add('visible');
+      result.classList.remove('visible');
+      error.classList.remove('visible');
+      statusText.textContent = text;
+      autoProgress.textContent = '';
+    }
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+    function showResult(url, name) {
+      const itemId = 'result-' + Date.now();
+      const safeName = name.replace(/[^a-zA-Z0-9]/g, '-');
+      const item = document.createElement('div');
+      item.className = 'result-item';
+
+      // iOS: no download button (doesn't work), only share
+      const downloadBtn = isIOS ? '' : `<button class="result-btn" onclick="downloadVideo('${url}', '${safeName}')">Télécharger</button>`;
+
+      item.innerHTML = `
+        <div class="result-header">
+          <span class="result-name">${name}</span>
+          <div class="result-actions">
+            <button class="result-btn" onclick="togglePreview('${itemId}')">Aperçu</button>
+            ${downloadBtn}
+            <button class="result-btn" onclick="shareVideo('${url}', '${name}')">Partager</button>
+          </div>
+        </div>
+        <div class="result-preview" id="${itemId}" style="display:none;">
+          <video src="${url}" controls playsinline webkit-playsinline></video>
+        </div>
+      `;
+      result.appendChild(item);
+      result.classList.add('visible');
+    }
+
+    function togglePreview(id) {
+      const preview = document.getElementById(id);
+      const video = preview.querySelector('video');
+      if (preview.style.display === 'none') {
+        preview.style.display = 'block';
+        video.play();
+      } else {
+        preview.style.display = 'none';
+        video.pause();
+      }
+    }
+
+    async function downloadVideo(url, name) {
+      // Desktop/Android only (not shown on iOS)
+      try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = name + '.mp4';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(blobUrl);
+      } catch (err) {
+        window.open(url, '_blank');
+      }
+    }
+
+    async function shareVideo(url, name) {
+      try {
+        if (navigator.share) {
+          await navigator.share({
+            title: 'Biblack - ' + name,
+            text: 'Vidéo générée avec Biblack',
+            url: url
+          });
+        } else {
+          // Fallback: copy to clipboard
+          await navigator.clipboard.writeText(url);
+          alert('Lien copié !');
+        }
+      } catch (err) {
+        // User cancelled or error
+        if (err.name !== 'AbortError') {
+          window.open(url, '_blank');
+        }
+      }
+    }
+
+    function showError(message) {
+      stopTimers();
+      status.classList.remove('visible');
+      error.classList.add('visible');
+      errorText.textContent = message;
+    }
+
+    function resetUI() {
+      stopTimers();
+      status.classList.remove('visible');
+      error.classList.remove('visible');
+    }
+
+    function setButtonsDisabled(disabled) {
+      generateBtns.forEach(btn => { if (btn) btn.disabled = disabled; });
+      randomBtns.forEach(btn => { if (btn) btn.disabled = disabled; });
+      autoBtns.forEach(btn => { if (btn) btn.disabled = disabled; });
+      isGenerating = disabled;
+    }
+
+    function setButtonsText(text, original) {
+      generateBtns.forEach(btn => { if (btn) btn.textContent = text || 'Générer'; });
+    }
+
+    // Generate single
+    async function generate() {
+      const hook = hookSelect.value;
+      const capture = captureSelect.value;
+
+      if (!hook || !capture) {
+        showError('Sélectionne un hook et une capture.');
+        return;
+      }
+
+      resetUI();
+      result.innerHTML = '';
+      setButtonsDisabled(true);
+      setButtonsText('Génération...');
+      showStatus('Préparation...');
+      startProgress();
+
+      try {
+        const url = `/api/merge?hook=${encodeURIComponent(hook)}&capture=${encodeURIComponent(capture)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error);
+        if (!data.url) throw new Error('URL non reçue');
+
+        stopTimers();
+        progressBar.style.width = '100%';
+        timeLeft.textContent = '0s';
+
+        setTimeout(() => {
+          status.classList.remove('visible');
+          showResult(data.url, `${hook} + ${capture}`);
+        }, 500);
+
+      } catch (err) {
+        showError(err.message);
+      } finally {
+        setButtonsDisabled(false);
+        setButtonsText('Générer');
+      }
+    }
+
+    // Generate all combinations
+    async function generateAll() {
+      if (hooks.length === 0 || captures.length === 0) {
+        showError('Pas de fichiers disponibles.');
+        return;
+      }
+
+      const total = hooks.length * captures.length;
+
+      if (!confirm(`Générer ${total} vidéos ?`)) return;
+
+      resetUI();
+      result.innerHTML = '';
+      setButtonsDisabled(true);
+      autoBtns.forEach(btn => { if (btn) btn.textContent = 'Génération...'; });
+      showStatus('Full Auto en cours...');
+
+      let completed = 0;
+      let errors = 0;
+
+      for (const hook of hooks) {
+        for (const capture of captures) {
+          if (!isGenerating) break;
+
+          autoProgress.textContent = `${completed + 1}/${total} - ${hook.name} + ${capture.name}`;
+          startProgress(25);
+
+          try {
+            const url = `/api/merge?hook=${encodeURIComponent(hook.name)}&capture=${encodeURIComponent(capture.name)}`;
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (res.ok && data.url) {
+              showResult(data.url, `${hook.name} + ${capture.name}`);
+            } else {
+              errors++;
+            }
+          } catch {
+            errors++;
+          }
+
+          completed++;
+          stopTimers();
+        }
+      }
+
+      status.classList.remove('visible');
+      autoProgress.textContent = '';
+      setButtonsDisabled(false);
+      autoBtns.forEach(btn => { if (btn) btn.textContent = 'Full Auto - Toutes les combinaisons'; });
+
+      if (errors > 0) {
+        showError(`Terminé avec ${errors} erreur(s) sur ${total}.`);
+      }
+    }
+
+    // Init
+    loadFiles();
+  </script>
+</body>
+</html>
