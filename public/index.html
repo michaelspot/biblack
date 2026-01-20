@@ -798,8 +798,9 @@
       const item = document.createElement('div');
       item.className = 'result-item';
 
-      // iOS: no download button (doesn't work), only share
+      // iOS: no download button (doesn't work), only share with "Enregistrer" label
       const downloadBtn = isIOS ? '' : `<button class="result-btn" onclick="downloadVideo('${url}', '${safeName}')">Télécharger</button>`;
+      const shareBtnText = isIOS ? 'Enregistrer' : 'Partager';
 
       item.innerHTML = `
         <div class="result-header">
@@ -807,7 +808,7 @@
           <div class="result-actions">
             <button class="result-btn" onclick="togglePreview('${itemId}')">Aperçu</button>
             ${downloadBtn}
-            <button class="result-btn" onclick="shareVideo('${url}', '${name}')">Partager</button>
+            <button class="result-btn" onclick="shareVideo('${url}', '${name}')">${shareBtnText}</button>
           </div>
         </div>
         <div class="result-preview" id="${itemId}" style="display:none;">
@@ -850,20 +851,45 @@
 
     async function shareVideo(url, name) {
       try {
-        if (navigator.share) {
+        const statusDiv = document.getElementById('statusText');
+        const originalStatus = statusDiv.textContent;
+        statusDiv.textContent = "Préparation du partage...";
+        document.getElementById('status').classList.add('visible');
+
+        // 1. Télécharge la vidéo en mémoire (Blob)
+        const response = await fetch(url);
+        const blob = await response.blob();
+
+        // 2. Crée un objet File que iOS reconnaît comme une vidéo
+        const file = new File([blob], `${name}.mp4`, { type: 'video/mp4' });
+
+        // 3. Vérifie si le partage de fichiers est supporté (iOS 15+)
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          statusDiv.textContent = originalStatus;
+          document.getElementById('status').classList.remove('visible');
           await navigator.share({
-            title: 'Biblack - ' + name,
-            text: 'Vidéo générée avec Biblack',
+            files: [file],
+            title: 'Biblack Video',
+          });
+        } else if (navigator.share) {
+          // Fallback: partage l'URL
+          statusDiv.textContent = originalStatus;
+          document.getElementById('status').classList.remove('visible');
+          await navigator.share({
+            title: 'Biblack Video',
             url: url
           });
         } else {
-          // Fallback: copy to clipboard
+          // Fallback: copie dans le presse-papier
+          statusDiv.textContent = originalStatus;
+          document.getElementById('status').classList.remove('visible');
           await navigator.clipboard.writeText(url);
           alert('Lien copié !');
         }
       } catch (err) {
-        // User cancelled or error
+        document.getElementById('status').classList.remove('visible');
         if (err.name !== 'AbortError') {
+          console.error('Erreur de partage:', err);
           window.open(url, '_blank');
         }
       }
