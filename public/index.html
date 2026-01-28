@@ -647,6 +647,8 @@
     let progressInterval = null;
     let isGenerating = false;
 
+    const ESTIMATED_TIME = 30;
+
     // Elements
     const app = document.getElementById('app');
     const loading = document.getElementById('loading');
@@ -728,8 +730,7 @@
       if (currentHookIndex < 0) currentHookIndex = hooks.length - 1;
       const item = hooks[currentHookIndex];
       hookPreviewVideo.src = item.url;
-      hookPreviewVideo.load();
-      hookPreviewVideo.play().catch(() => {});
+      hookPreviewVideo.play();
       highlightThumb(hookThumbs, currentHookIndex);
     }
 
@@ -740,8 +741,7 @@
       if (currentCaptureIndex < 0) currentCaptureIndex = captures.length - 1;
       const item = captures[currentCaptureIndex];
       capturePreviewVideo.src = item.url;
-      capturePreviewVideo.load();
-      capturePreviewVideo.play().catch(() => {});
+      capturePreviewVideo.play();
       highlightThumb(captureThumbs, currentCaptureIndex);
     }
 
@@ -918,25 +918,24 @@
       progressInterval = null;
     }
 
-    function startProgress() {
+    function startProgress(duration = ESTIMATED_TIME) {
       stopTimers();
-      let dots = 0;
-      timeLeft.textContent = '';
+      let secondsLeft = duration;
+      let progress = 0;
+
+      timeLeft.textContent = `${secondsLeft}s`;
       progressBar.style.width = '0%';
 
-      // Animate progress bar smoothly
-      progressInterval = setInterval(() => {
-        const currentWidth = parseFloat(progressBar.style.width) || 0;
-        if (currentWidth < 90) {
-          progressBar.style.width = (currentWidth + 0.5) + '%';
-        }
-      }, 100);
-
-      // Animate dots
       countdownInterval = setInterval(() => {
-        dots = (dots + 1) % 4;
-        statusText.textContent = 'Montage en cours' + '.'.repeat(dots);
-      }, 500);
+        secondsLeft--;
+        if (secondsLeft >= 0) timeLeft.textContent = `${secondsLeft}s`;
+      }, 1000);
+
+      const step = 95 / (duration * 20);
+      progressInterval = setInterval(() => {
+        progress += step;
+        if (progress <= 95) progressBar.style.width = `${progress}%`;
+      }, 50);
     }
 
     function showStatus(text) {
@@ -1098,14 +1097,12 @@
 
         stopTimers();
         progressBar.style.width = '100%';
-        statusText.textContent = 'Terminé !';
+        timeLeft.textContent = '0s';
 
-        // Auto-save: trigger share/save directly
-        setTimeout(async () => {
-          const name = `${hookItem.name}-${captureItem.name}`.replace(/[^a-zA-Z0-9]/g, '-');
-          await shareVideo(data.url, name);
+        setTimeout(() => {
           status.classList.remove('visible');
-        }, 300);
+          showResult(data.url, `${hookItem.name} + ${captureItem.name}`);
+        }, 500);
 
       } catch (err) {
         showError(err.message);
