@@ -678,18 +678,13 @@
         const div = document.createElement('div');
         div.className = 'thumb-item' + (i === 0 ? ' active' : '');
         div.dataset.index = i;
-        div.dataset.url = item.url;
         const video = document.createElement('video');
-        video.preload = 'none';
+        video.src = item.url + '#t=0.1';
+        video.preload = 'metadata';
         video.muted = true;
         video.playsInline = true;
         video.setAttribute('playsinline', '');
         video.setAttribute('webkit-playsinline', '');
-        // Lazy load: only load visible thumbnails
-        if (i < 6) {
-          video.src = item.url + '#t=0.1';
-          video.preload = 'metadata';
-        }
         div.appendChild(video);
         div.addEventListener('click', () => {
           if (type === 'hook') {
@@ -707,16 +702,7 @@
     function highlightThumb(container, index) {
       container.querySelectorAll('.thumb-item').forEach((el, i) => {
         el.classList.toggle('active', i === index);
-        // Lazy load nearby thumbnails
-        if (Math.abs(i - index) <= 3) {
-          const video = el.querySelector('video');
-          if (video && !video.src && el.dataset.url) {
-            video.src = el.dataset.url + '#t=0.1';
-            video.preload = 'metadata';
-          }
-        }
       });
-      // Scroll selected into view
       const active = container.children[index];
       if (active) {
         active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
