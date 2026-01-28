@@ -217,6 +217,8 @@
     .preview-container {
       position: relative;
       margin-top: 8px;
+      display: flex;
+      justify-content: center;
     }
 
     .main-preview {
@@ -247,7 +249,7 @@
       border: none;
       border-radius: 8px;
       color: #ff4444;
-      font-size: 18px;
+      font-size: 16px;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -558,7 +560,7 @@
             <button class="thumb-arrow" onclick="navigateHook(1)">›</button>
           </div>
           <div class="preview-container">
-            <button class="btn-delete" onclick="deleteFile('hook')" title="Supprimer">×</button>
+            <button class="btn-delete" onclick="deleteFile('hook')" title="Supprimer">🗑</button>
             <div class="main-preview" id="hookPreview">
               <video id="hookPreviewVideo" loop muted playsinline webkit-playsinline></video>
             </div>
@@ -573,7 +575,7 @@
             <button class="thumb-arrow" onclick="navigateCapture(1)">›</button>
           </div>
           <div class="preview-container">
-            <button class="btn-delete" onclick="deleteFile('capture')" title="Supprimer">×</button>
+            <button class="btn-delete" onclick="deleteFile('capture')" title="Supprimer">🗑</button>
             <div class="main-preview" id="capturePreview">
               <video id="capturePreviewVideo" loop muted playsinline webkit-playsinline></video>
             </div>
