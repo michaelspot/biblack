@@ -629,7 +629,16 @@
         const div = document.createElement('div');
         div.className = 'thumb-item' + (i === 0 ? ' active' : '');
         div.dataset.index = i;
-        div.innerHTML = `<video src="${item.url}" preload="metadata" muted playsinline></video>`;
+        const video = document.createElement('video');
+        video.src = item.url;
+        video.preload = 'metadata';
+        video.muted = true;
+        video.playsInline = true;
+        // Show first frame when loaded
+        video.addEventListener('loadeddata', () => {
+          video.currentTime = 0.001;
+        });
+        div.appendChild(video);
         div.addEventListener('click', () => {
           if (type === 'hook') {
             currentHookIndex = i;
