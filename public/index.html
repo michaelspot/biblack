@@ -158,11 +158,11 @@
 
     .thumb-arrow {
       width: 32px;
-      height: 60px;
-      background: rgba(0,0,0,0.6);
+      height: 80px;
+      background: none;
       border: none;
-      color: #888;
-      font-size: 22px;
+      color: #666;
+      font-size: 24px;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -191,15 +191,15 @@
     }
 
     .thumb-item {
-      width: 48px;
-      height: 60px;
+      width: 45px;
+      height: 80px;
       border-radius: 6px;
       overflow: hidden;
       flex-shrink: 0;
       cursor: pointer;
       border: 2px solid transparent;
       transition: border-color 0.2s;
-      background: #111;
+      background: #222;
     }
 
     .thumb-item.active {
@@ -630,14 +630,12 @@
         div.className = 'thumb-item' + (i === 0 ? ' active' : '');
         div.dataset.index = i;
         const video = document.createElement('video');
-        video.src = item.url;
-        video.preload = 'metadata';
+        video.src = item.url + '#t=0.1';
+        video.preload = 'auto';
         video.muted = true;
         video.playsInline = true;
-        // Show first frame when loaded
-        video.addEventListener('loadeddata', () => {
-          video.currentTime = 0.001;
-        });
+        video.setAttribute('playsinline', '');
+        video.setAttribute('webkit-playsinline', '');
         div.appendChild(video);
         div.addEventListener('click', () => {
           if (type === 'hook') {
