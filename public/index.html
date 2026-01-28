@@ -845,41 +845,55 @@
       });
     }
 
-    async function uploadFile(file, type) {
+    function uploadFile(file, type) {
       const dropZone = document.getElementById(`${type}DropZone`);
       const originalText = dropZone.innerHTML;
       dropZone.innerHTML = '<span class="drop-zone-icon">...</span><div class="drop-zone-text">Upload en cours</div>';
 
-      try {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/upload', true);
+
+        xhr.onload = async function() {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            if (xhr.status >= 200 && xhr.status < 300) {
+              await loadFiles();
+              dropZone.innerHTML = originalText;
+              showMainPage();
+              if (type === 'hook') {
+                const idx = hooks.findIndex(h => h.name === file.name);
+                if (idx >= 0) currentHookIndex = idx;
+                showCurrentHook();
+              } else {
+                const idx = captures.findIndex(c => c.name === file.name);
+                if (idx >= 0) currentCaptureIndex = idx;
+                showCurrentCapture();
+              }
+              resolve(data);
+            } else {
+              dropZone.innerHTML = originalText;
+              showError(data.error || 'Erreur upload');
+              reject(new Error(data.error));
+            }
+          } catch (e) {
+            dropZone.innerHTML = originalText;
+            showError('Erreur: ' + xhr.responseText.substring(0, 100));
+            reject(e);
+          }
+        };
+
+        xhr.onerror = function() {
+          dropZone.innerHTML = originalText;
+          showError('Erreur réseau');
+          reject(new Error('Network error'));
+        };
+
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', file, file.name || 'video.mp4');
         formData.append('type', type);
-
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-
-        await loadFiles();
-        dropZone.innerHTML = originalText;
-
-        showMainPage();
-        if (type === 'hook') {
-          const idx = hooks.findIndex(h => h.name === file.name);
-          if (idx >= 0) currentHookIndex = idx;
-          showCurrentHook();
-        } else {
-          const idx = captures.findIndex(c => c.name === file.name);
-          if (idx >= 0) currentCaptureIndex = idx;
-          showCurrentCapture();
-        }
-      } catch (err) {
-        dropZone.innerHTML = originalText;
-        showError(err.message);
-      }
+        xhr.send(formData);
+      });
     }
 
     setupDropZone(
