@@ -197,26 +197,42 @@
       color: #444;
     }
 
-    select {
-      width: 100%;
-      min-width: 0;
-      padding: 16px;
-      background: #111;
-      border: 1px solid #222;
-      border-radius: 8px;
-      color: #fff;
-      font-size: 15px;
-      cursor: pointer;
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23666' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 16px center;
-      text-overflow: ellipsis;
+    .item-nav {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
-    select:focus {
-      outline: none;
+    .item-nav-btn {
+      width: 44px;
+      height: 44px;
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 10px;
+      color: #888;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .item-nav-btn:hover {
       border-color: #444;
+      color: #fff;
+    }
+
+    .item-nav-name {
+      flex: 1;
+      min-width: 0;
+      font-size: 14px;
+      color: #fff;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .inline-preview {
@@ -573,9 +589,11 @@
           <span class="section-title">Hook</span>
           <span class="file-count" id="hookCount"></span>
         </div>
-        <select id="hook">
-          <option value="">Sélectionner...</option>
-        </select>
+        <div class="item-nav">
+          <button class="item-nav-btn" onclick="navigateHook(-1)">‹</button>
+          <span class="item-nav-name" id="hookName">—</span>
+          <button class="item-nav-btn" onclick="navigateHook(1)">›</button>
+        </div>
         <div class="inline-preview" id="hookPreview">
           <video id="hookPreviewVideo" loop muted playsinline webkit-playsinline></video>
         </div>
@@ -586,9 +604,11 @@
           <span class="section-title">Capture</span>
           <span class="file-count" id="captureCount"></span>
         </div>
-        <select id="capture">
-          <option value="">Sélectionner...</option>
-        </select>
+        <div class="item-nav">
+          <button class="item-nav-btn" onclick="navigateCapture(-1)">‹</button>
+          <span class="item-nav-name" id="captureName">—</span>
+          <button class="item-nav-btn" onclick="navigateCapture(1)">›</button>
+        </div>
         <div class="inline-preview" id="capturePreview">
           <video id="capturePreviewVideo" loop muted playsinline webkit-playsinline></video>
         </div>
@@ -663,6 +683,8 @@
     let hooks = [];
     let captures = [];
     let currentCategory = 'snapchat';
+    let currentHookIndex = 0;
+    let currentCaptureIndex = 0;
     let countdownInterval = null;
     let progressInterval = null;
     let isGenerating = false;
@@ -679,8 +701,6 @@
     // Elements
     const app = document.getElementById('app');
     const loading = document.getElementById('loading');
-    const hookSelect = document.getElementById('hook');
-    const captureSelect = document.getElementById('capture');
     const status = document.getElementById('status');
     const progressBar = document.getElementById('progressBar');
     const statusText = document.getElementById('statusText');
@@ -693,6 +713,8 @@
     const hookPreviewVideo = document.getElementById('hookPreviewVideo');
     const capturePreviewEl = document.getElementById('capturePreview');
     const capturePreviewVideo = document.getElementById('capturePreviewVideo');
+    const hookNameEl = document.getElementById('hookName');
+    const captureNameEl = document.getElementById('captureName');
     const footerMenu = document.getElementById('footerMenu');
     const pageMain = document.getElementById('pageMain');
     const pageImport = document.getElementById('pageImport');
@@ -705,6 +727,63 @@
 
     const refreshBtn = document.getElementById('refreshBtn');
 
+    // Filter hooks by category
+    function getFilteredHooks() {
+      return hooks.filter(h => h.category === currentCategory);
+    }
+
+    // Show current hook
+    function showCurrentHook() {
+      const filtered = getFilteredHooks();
+      if (filtered.length === 0) {
+        hookNameEl.textContent = '—';
+        hookPreviewEl.classList.remove('visible');
+        hookPreviewVideo.pause();
+        hookPreviewVideo.removeAttribute('src');
+        return;
+      }
+      if (currentHookIndex >= filtered.length) currentHookIndex = 0;
+      if (currentHookIndex < 0) currentHookIndex = filtered.length - 1;
+      const item = filtered[currentHookIndex];
+      hookNameEl.textContent = item.name;
+      document.getElementById('hookCount').textContent = `${currentHookIndex + 1}/${filtered.length}`;
+      hookPreviewVideo.src = item.url;
+      hookPreviewVideo.play();
+      hookPreviewEl.classList.add('visible');
+    }
+
+    // Show current capture
+    function showCurrentCapture() {
+      if (captures.length === 0) {
+        captureNameEl.textContent = '—';
+        capturePreviewEl.classList.remove('visible');
+        capturePreviewVideo.pause();
+        capturePreviewVideo.removeAttribute('src');
+        return;
+      }
+      if (currentCaptureIndex >= captures.length) currentCaptureIndex = 0;
+      if (currentCaptureIndex < 0) currentCaptureIndex = captures.length - 1;
+      const item = captures[currentCaptureIndex];
+      captureNameEl.textContent = item.name;
+      document.getElementById('captureCount').textContent = `${currentCaptureIndex + 1}/${captures.length}`;
+      capturePreviewVideo.src = item.url;
+      capturePreviewVideo.play();
+      capturePreviewEl.classList.add('visible');
+    }
+
+    function navigateHook(dir) {
+      const filtered = getFilteredHooks();
+      if (filtered.length === 0) return;
+      currentHookIndex = (currentHookIndex + dir + filtered.length) % filtered.length;
+      showCurrentHook();
+    }
+
+    function navigateCapture(dir) {
+      if (captures.length === 0) return;
+      currentCaptureIndex = (currentCaptureIndex + dir + captures.length) % captures.length;
+      showCurrentCapture();
+    }
+
     // Load files
     async function loadFiles() {
       try {
@@ -715,10 +794,10 @@
         hooks = data.hooks;
         captures = data.captures;
 
-        updateHookSelect();
-        populateSelect(captureSelect, captures);
-
-        document.getElementById('captureCount').textContent = `${captures.length} fichiers`;
+        currentHookIndex = 0;
+        currentCaptureIndex = 0;
+        showCurrentHook();
+        showCurrentCapture();
 
         loading.classList.add('hidden');
         app.classList.remove('hidden');
@@ -727,28 +806,14 @@
       }
     }
 
-    // Filter hooks by category
-    function getFilteredHooks() {
-      return hooks.filter(h => h.category === currentCategory);
-    }
-
-    function updateHookSelect() {
-      const filtered = getFilteredHooks();
-      populateSelect(hookSelect, filtered);
-      document.getElementById('hookCount').textContent = `${filtered.length} fichiers`;
-      hookPreviewEl.classList.remove('visible');
-      hookPreviewVideo.removeAttribute('src');
-      hookPreviewVideo.pause();
-    }
-
     // Category tabs
     function switchCategory(category) {
       currentCategory = category;
-      // Update active tab
       document.querySelectorAll('.category-tab').forEach(tab => {
         tab.classList.toggle('active', tab.dataset.category === category);
       });
-      updateHookSelect();
+      currentHookIndex = 0;
+      showCurrentHook();
     }
 
     // Setup category tabs
@@ -764,46 +829,6 @@
       await loadFiles();
       refreshBtn.classList.remove('spinning');
     }
-
-    function populateSelect(select, items) {
-      select.innerHTML = '<option value="">Sélectionner...</option>';
-      items.forEach(item => {
-        const opt = document.createElement('option');
-        opt.value = item.name;
-        opt.textContent = item.name;
-        opt.dataset.url = item.url;
-        if (item.prefix) opt.dataset.prefix = item.prefix;
-        if (item.category) opt.dataset.category = item.category;
-        select.appendChild(opt);
-      });
-    }
-
-    // Inline preview
-    hookSelect.addEventListener('change', () => {
-      const selected = hookSelect.options[hookSelect.selectedIndex];
-      if (hookSelect.value && selected.dataset.url) {
-        hookPreviewVideo.src = selected.dataset.url;
-        hookPreviewVideo.play();
-        hookPreviewEl.classList.add('visible');
-      } else {
-        hookPreviewEl.classList.remove('visible');
-        hookPreviewVideo.pause();
-        hookPreviewVideo.removeAttribute('src');
-      }
-    });
-
-    captureSelect.addEventListener('change', () => {
-      const selected = captureSelect.options[captureSelect.selectedIndex];
-      if (captureSelect.value && selected.dataset.url) {
-        capturePreviewVideo.src = selected.dataset.url;
-        capturePreviewVideo.play();
-        capturePreviewEl.classList.add('visible');
-      } else {
-        capturePreviewEl.classList.remove('visible');
-        capturePreviewVideo.pause();
-        capturePreviewVideo.removeAttribute('src');
-      }
-    });
 
     // Page navigation
     function switchPage(page) {
@@ -832,10 +857,10 @@
     function selectRandom() {
       const filteredHooks = getFilteredHooks();
       if (filteredHooks.length && captures.length) {
-        hookSelect.value = filteredHooks[Math.floor(Math.random() * filteredHooks.length)].name;
-        captureSelect.value = captures[Math.floor(Math.random() * captures.length)].name;
-        hookSelect.dispatchEvent(new Event('change'));
-        captureSelect.dispatchEvent(new Event('change'));
+        currentHookIndex = Math.floor(Math.random() * filteredHooks.length);
+        currentCaptureIndex = Math.floor(Math.random() * captures.length);
+        showCurrentHook();
+        showCurrentCapture();
       }
     }
 
@@ -889,11 +914,18 @@
 
         dropZone.innerHTML = originalText;
 
-        // Return to main page and select the uploaded file
+        // Return to main page and show the uploaded file
         showMainPage();
-        const select = type === 'hook' ? hookSelect : captureSelect;
-        select.value = file.name;
-        select.dispatchEvent(new Event('change'));
+        if (type === 'hook') {
+          const filtered = getFilteredHooks();
+          const idx = filtered.findIndex(h => h.name === file.name);
+          if (idx >= 0) currentHookIndex = idx;
+          showCurrentHook();
+        } else {
+          const idx = captures.findIndex(c => c.name === file.name);
+          if (idx >= 0) currentCaptureIndex = idx;
+          showCurrentCapture();
+        }
       } catch (err) {
         dropZone.innerHTML = originalText;
         showError(err.message);
@@ -1093,15 +1125,15 @@
 
     // Generate single
     async function generate() {
-      const hook = hookSelect.value;
-      const capture = captureSelect.value;
-      const selectedOption = hookSelect.options[hookSelect.selectedIndex];
-      const hookPrefix = selectedOption.dataset.prefix || categoryPrefixes[currentCategory];
-
-      if (!hook || !capture) {
+      const filteredHooks = getFilteredHooks();
+      if (filteredHooks.length === 0 || captures.length === 0) {
         showError('Sélectionne un hook et une capture.');
         return;
       }
+
+      const hookItem = filteredHooks[currentHookIndex];
+      const captureItem = captures[currentCaptureIndex];
+      const hookPrefix = hookItem.prefix || categoryPrefixes[currentCategory];
 
       resetUI();
       result.innerHTML = '';
@@ -1111,7 +1143,7 @@
       startProgress();
 
       try {
-        const url = `/api/merge?hook=${encodeURIComponent(hook)}&capture=${encodeURIComponent(capture)}&hookPrefix=${encodeURIComponent(hookPrefix)}`;
+        const url = `/api/merge?hook=${encodeURIComponent(hookItem.name)}&capture=${encodeURIComponent(captureItem.name)}&hookPrefix=${encodeURIComponent(hookPrefix)}`;
         const res = await fetch(url);
         const data = await res.json();
 
@@ -1124,7 +1156,7 @@
 
         setTimeout(() => {
           status.classList.remove('visible');
-          showResult(data.url, `${hook} + ${capture}`);
+          showResult(data.url, `${hookItem.name} + ${captureItem.name}`);
         }, 500);
 
       } catch (err) {
