@@ -97,7 +97,9 @@ export default async function handler(req, res) {
         .outputOptions([
           "-map", "[outv]",
           "-c:v", "libx264",
-          "-preset", "fast",
+          "-preset", "ultrafast",
+          "-crf", "28",
+          "-tune", "fastdecode",
           "-movflags", "+faststart",
           "-an"
         ])
