@@ -1,4 +1,6 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import formidable from "formidable";
+import fs from "fs";
 
 const s3 = new S3Client({
   region: "auto",
@@ -11,39 +13,44 @@ const s3 = new S3Client({
 
 export const config = {
   api: {
-    bodyParser: {
-      sizeLimit: '100mb',
-    },
+    bodyParser: false,
   },
 };
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Méthode non autorisée. Utilisez POST.' });
+    return res.status(405).json({ error: 'Méthode non autorisée.' });
   }
 
   try {
-    const { filename, type, data } = req.body;
+    const form = formidable({ maxFileSize: 100 * 1024 * 1024 });
 
-    if (!filename || !type || !data) {
-      return res.status(400).json({ error: 'Données manquantes : nom de fichier, type ou contenu requis.' });
+    const [fields, files] = await form.parse(req);
+
+    const type = fields.type?.[0];
+    const file = files.file?.[0];
+
+    if (!file || !type) {
+      return res.status(400).json({ error: 'Fichier ou type manquant.' });
     }
 
     if (!['hook', 'capture'].includes(type)) {
-      return res.status(400).json({ error: 'Type invalide. Utilisez "hook" ou "capture".' });
+      return res.status(400).json({ error: 'Type invalide.' });
     }
 
-    // Decode base64
-    const buffer = Buffer.from(data, 'base64');
+    const buffer = fs.readFileSync(file.filepath);
     const folder = type === 'hook' ? 'hooks' : 'captures';
+    const filename = file.originalFilename || 'video.mp4';
     const key = `${folder}/${filename}`;
 
     await s3.send(new PutObjectCommand({
       Bucket: process.env.R2_BUCKET_NAME,
       Key: key,
       Body: buffer,
-      ContentType: 'video/mp4',
+      ContentType: file.mimetype || 'video/mp4',
     }));
+
+    fs.unlinkSync(file.filepath);
 
     const publicBaseUrl = "https://pub-f14155236ed54ea8847eb4db5d3c64c1.r2.dev";
 
