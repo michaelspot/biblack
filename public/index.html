@@ -70,7 +70,13 @@
       letter-spacing: -0.5px;
     }
 
-    .btn-refresh {
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn-header {
       width: 40px;
       height: 40px;
       background: #111;
@@ -85,12 +91,18 @@
       transition: all 0.2s;
     }
 
-    .btn-refresh:hover {
+    .btn-header:hover {
       border-color: #444;
       color: #fff;
     }
 
-    .btn-refresh.spinning {
+    .btn-header.active {
+      background: #fff;
+      border-color: #fff;
+      color: #000;
+    }
+
+    .btn-header.spinning {
       animation: spin 0.8s linear infinite;
     }
 
@@ -189,38 +201,53 @@
       border-color: #444;
     }
 
-    .select-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      width: 100%;
-      min-width: 0;
-    }
-
-    .select-row select {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .btn-preview {
-      padding: 16px;
-      background: #111;
-      border: 1px solid #222;
+    .inline-preview {
+      margin-top: 12px;
       border-radius: 8px;
+      overflow: hidden;
+      background: #111;
+      display: none;
+    }
+
+    .inline-preview.visible {
+      display: block;
+    }
+
+    .inline-preview video {
+      width: 100%;
+      max-height: 280px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .page-import {
+      display: none;
+    }
+
+    .page-import.visible {
+      display: block;
+    }
+
+    .page-import .section {
+      margin-bottom: 24px;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       color: #666;
-      font-size: 13px;
+      font-size: 14px;
       cursor: pointer;
-      white-space: nowrap;
+      margin-bottom: 20px;
+      background: none;
+      border: none;
+      padding: 0;
+      transition: color 0.2s;
     }
 
-    .btn-preview:hover {
-      border-color: #444;
-      color: #888;
-    }
-
-    .btn-preview:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
+    .back-link:hover {
+      color: #fff;
     }
 
     .drop-zone {
@@ -314,10 +341,8 @@
       bottom: 0;
       left: 0;
       right: 0;
-      background: #111;
-      border-top: 1px solid #222;
-      padding: 12px 16px;
-      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      background: #000;
+      padding: 0 16px 20px;
       z-index: 100;
     }
 
@@ -327,7 +352,7 @@
     }
 
     .footer-menu .btn {
-      padding: 14px 20px;
+      padding: 16px 20px;
     }
 
     .status {
@@ -530,7 +555,10 @@
   <div class="container">
     <div style="display: flex; justify-content: space-between; align-items: center;">
       <h1>Biblack</h1>
-      <button class="btn-refresh" onclick="refresh()" id="refreshBtn" title="Rafraîchir">↻</button>
+      <div class="header-actions">
+        <button class="btn-header" onclick="refresh()" id="refreshBtn" title="Rafraîchir">↻</button>
+        <button class="btn-header" onclick="showImportPage()" id="importBtn" title="Importer">+</button>
+      </div>
     </div>
     <p class="subtitle">Fusionne hooks et captures automatiquement</p>
 
@@ -544,21 +572,18 @@
     <div id="loading" class="loading">Chargement...</div>
 
     <div id="app" class="hidden">
+      <!-- Page principale -->
+      <div id="pageMain">
       <div class="section">
         <div class="section-header">
           <span class="section-title">Hook</span>
           <span class="file-count" id="hookCount"></span>
         </div>
-        <div class="select-row">
-          <select id="hook">
-            <option value="">Sélectionner...</option>
-          </select>
-          <button class="btn-preview" id="hookPreviewBtn" disabled onclick="openPreview('hook')">Aperçu</button>
-        </div>
-        <div class="drop-zone" id="hookDropZone" data-type="hook">
-          <span class="drop-zone-icon">+</span>
-          <div class="drop-zone-text">Ajouter un hook</div>
-          <input type="file" accept="video/*" style="display:none" id="hookFileInput">
+        <select id="hook">
+          <option value="">Sélectionner...</option>
+        </select>
+        <div class="inline-preview" id="hookPreview">
+          <video id="hookPreviewVideo" loop muted playsinline webkit-playsinline></video>
         </div>
       </div>
 
@@ -567,16 +592,11 @@
           <span class="section-title">Capture</span>
           <span class="file-count" id="captureCount"></span>
         </div>
-        <div class="select-row">
-          <select id="capture">
-            <option value="">Sélectionner...</option>
-          </select>
-          <button class="btn-preview" id="capturePreviewBtn" disabled onclick="openPreview('capture')">Aperçu</button>
-        </div>
-        <div class="drop-zone" id="captureDropZone" data-type="capture">
-          <span class="drop-zone-icon">+</span>
-          <div class="drop-zone-text">Ajouter une capture</div>
-          <input type="file" accept="video/*" style="display:none" id="captureFileInput">
+        <select id="capture">
+          <option value="">Sélectionner...</option>
+        </select>
+        <div class="inline-preview" id="capturePreview">
+          <video id="capturePreviewVideo" loop muted playsinline webkit-playsinline></video>
         </div>
       </div>
 
@@ -588,6 +608,35 @@
 
       <div class="buttons-desktop" style="margin-top: 8px;">
         <button class="btn btn-auto" id="autoBtnDesktop" onclick="generateAll()">Full Auto - Toutes les combinaisons</button>
+      </div>
+
+      </div><!-- /pageMain -->
+
+      <!-- Page import -->
+      <div id="pageImport" class="page-import">
+        <button class="back-link" onclick="showMainPage()">← Retour</button>
+
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">Importer un hook</span>
+          </div>
+          <div class="drop-zone" id="hookDropZone" data-type="hook">
+            <span class="drop-zone-icon">+</span>
+            <div class="drop-zone-text">Ajouter un hook</div>
+            <input type="file" accept="video/*" style="display:none" id="hookFileInput">
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">Importer une capture</span>
+          </div>
+          <div class="drop-zone" id="captureDropZone" data-type="capture">
+            <span class="drop-zone-icon">+</span>
+            <div class="drop-zone-text">Ajouter une capture</div>
+            <input type="file" accept="video/*" style="display:none" id="captureFileInput">
+          </div>
+        </div>
       </div>
 
       <div class="status" id="status">
@@ -648,9 +697,14 @@
     const result = document.getElementById('result');
     const error = document.getElementById('error');
     const errorText = document.getElementById('errorText');
-    const hookPreviewBtn = document.getElementById('hookPreviewBtn');
-    const capturePreviewBtn = document.getElementById('capturePreviewBtn');
+    const hookPreviewEl = document.getElementById('hookPreview');
+    const hookPreviewVideo = document.getElementById('hookPreviewVideo');
+    const capturePreviewEl = document.getElementById('capturePreview');
+    const capturePreviewVideo = document.getElementById('capturePreviewVideo');
     const footerMenu = document.getElementById('footerMenu');
+    const pageMain = document.getElementById('pageMain');
+    const pageImport = document.getElementById('pageImport');
+    const importBtn = document.getElementById('importBtn');
 
     // All buttons (desktop + mobile)
     const generateBtns = [document.getElementById('generateBtnDesktop'), document.getElementById('generateBtnMobile')];
@@ -690,7 +744,9 @@
       const filtered = getFilteredHooks();
       populateSelect(hookSelect, filtered);
       document.getElementById('hookCount').textContent = `${filtered.length} fichiers`;
-      hookPreviewBtn.disabled = true;
+      hookPreviewEl.classList.remove('visible');
+      hookPreviewVideo.removeAttribute('src');
+      hookPreviewVideo.pause();
     }
 
     // Category tabs
@@ -730,21 +786,55 @@
       });
     }
 
-    // Preview
+    // Inline preview
     hookSelect.addEventListener('change', () => {
-      hookPreviewBtn.disabled = !hookSelect.value;
+      const selected = hookSelect.options[hookSelect.selectedIndex];
+      if (hookSelect.value && selected.dataset.url) {
+        hookPreviewVideo.src = selected.dataset.url;
+        hookPreviewVideo.play();
+        hookPreviewEl.classList.add('visible');
+      } else {
+        hookPreviewEl.classList.remove('visible');
+        hookPreviewVideo.pause();
+        hookPreviewVideo.removeAttribute('src');
+      }
     });
 
     captureSelect.addEventListener('change', () => {
-      capturePreviewBtn.disabled = !captureSelect.value;
+      const selected = captureSelect.options[captureSelect.selectedIndex];
+      if (captureSelect.value && selected.dataset.url) {
+        capturePreviewVideo.src = selected.dataset.url;
+        capturePreviewVideo.play();
+        capturePreviewEl.classList.add('visible');
+      } else {
+        capturePreviewEl.classList.remove('visible');
+        capturePreviewVideo.pause();
+        capturePreviewVideo.removeAttribute('src');
+      }
     });
 
-    function openPreview(type) {
-      const select = type === 'hook' ? hookSelect : captureSelect;
-      const selected = select.options[select.selectedIndex];
-      if (selected.dataset.url) {
-        window.open(selected.dataset.url, '_blank');
-      }
+    // Page navigation
+    const categoryTabs = document.getElementById('categoryTabs');
+    const subtitle = document.querySelector('.subtitle');
+
+    function showImportPage() {
+      pageMain.style.display = 'none';
+      categoryTabs.style.display = 'none';
+      subtitle.style.display = 'none';
+      pageImport.classList.add('visible');
+      importBtn.classList.add('active');
+      footerMenu.style.display = 'none';
+      hookPreviewVideo.pause();
+      capturePreviewVideo.pause();
+    }
+
+    function showMainPage() {
+      pageImport.classList.remove('visible');
+      pageMain.style.display = '';
+      categoryTabs.style.display = '';
+      subtitle.style.display = '';
+      importBtn.classList.remove('active');
+      footerMenu.style.display = '';
     }
 
     // Random
@@ -753,8 +843,8 @@
       if (filteredHooks.length && captures.length) {
         hookSelect.value = filteredHooks[Math.floor(Math.random() * filteredHooks.length)].name;
         captureSelect.value = captures[Math.floor(Math.random() * captures.length)].name;
-        hookPreviewBtn.disabled = false;
-        capturePreviewBtn.disabled = false;
+        hookSelect.dispatchEvent(new Event('change'));
+        captureSelect.dispatchEvent(new Event('change'));
       }
     }
 
@@ -806,11 +896,13 @@
 
         await loadFiles();
 
+        dropZone.innerHTML = originalText;
+
+        // Return to main page and select the uploaded file
+        showMainPage();
         const select = type === 'hook' ? hookSelect : captureSelect;
         select.value = file.name;
         select.dispatchEvent(new Event('change'));
-
-        dropZone.innerHTML = originalText;
       } catch (err) {
         dropZone.innerHTML = originalText;
         showError(err.message);
