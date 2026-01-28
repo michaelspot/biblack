@@ -135,121 +135,95 @@
       to { transform: rotate(360deg); }
     }
 
-    .category-tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 32px;
-      overflow-x: auto;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-      padding-bottom: 4px;
-    }
-
-    .category-tabs::-webkit-scrollbar {
-      display: none;
-    }
-
-    .category-tab {
-      padding: 10px 18px;
-      background: #111;
-      border: 1px solid #222;
-      border-radius: 20px;
-      color: #666;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.2s;
-    }
-
-    .category-tab:hover {
-      border-color: #444;
-      color: #999;
-    }
-
-    .category-tab.active {
-      background: #fff;
-      border-color: #fff;
-      color: #000;
-    }
-
     .section {
-      margin-bottom: 32px;
-    }
-
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 24px;
     }
 
     .section-title {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 500;
       text-transform: uppercase;
       letter-spacing: 1px;
-      color: #888;
+      color: #555;
+      margin-bottom: 10px;
     }
 
-    .file-count {
-      font-size: 12px;
-      color: #444;
-    }
-
-    .item-nav {
+    /* Thumbnail strip */
+    .thumb-strip {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 0;
+      position: relative;
     }
 
-    .item-nav-btn {
-      width: 44px;
-      height: 44px;
-      background: #111;
-      border: 1px solid #222;
-      border-radius: 10px;
+    .thumb-arrow {
+      width: 32px;
+      height: 60px;
+      background: rgba(0,0,0,0.6);
+      border: none;
       color: #888;
-      font-size: 20px;
+      font-size: 22px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s;
       flex-shrink: 0;
+      z-index: 2;
+      transition: color 0.2s;
     }
 
-    .item-nav-btn:hover {
-      border-color: #444;
+    .thumb-arrow:hover {
       color: #fff;
     }
 
-    .item-nav-name {
+    .thumb-scroll {
       flex: 1;
-      min-width: 0;
-      font-size: 14px;
-      color: #fff;
-      text-align: center;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      padding: 4px 0;
     }
 
-    .inline-preview {
-      margin-top: 12px;
-      border-radius: 8px;
-      overflow: hidden;
-      background: #111;
+    .thumb-scroll::-webkit-scrollbar {
       display: none;
     }
 
-    .inline-preview.visible {
-      display: block;
+    .thumb-item {
+      width: 48px;
+      height: 60px;
+      border-radius: 6px;
+      overflow: hidden;
+      flex-shrink: 0;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.2s;
+      background: #111;
     }
 
-    .inline-preview video {
+    .thumb-item.active {
+      border-color: #fff;
+    }
+
+    .thumb-item video {
       width: 100%;
-      max-height: 280px;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+
+    /* Main preview */
+    .main-preview {
+      margin-top: 8px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #111;
+    }
+
+    .main-preview video {
+      width: 100%;
+      max-height: 300px;
       object-fit: contain;
       display: block;
     }
@@ -290,25 +264,18 @@
       font-size: 13px;
     }
 
-    .drop-zone-text span {
-      color: #888;
-      text-decoration: underline;
-    }
-
-    /* Desktop buttons */
+    /* Desktop button */
     .buttons-desktop {
-      display: flex;
-      gap: 8px;
-      margin-top: 32px;
+      margin-top: 24px;
     }
 
     .btn {
-      flex: 1;
+      width: 100%;
       padding: 16px 24px;
       border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
     }
@@ -327,47 +294,24 @@
       background: #e0e0e0;
     }
 
-    .btn-secondary {
-      background: #222;
-      color: #fff;
-    }
-
-    .btn-secondary:hover:not(:disabled) {
-      background: #333;
-    }
-
-    .btn-auto {
-      background: #111;
-      color: #fff;
-      border: 1px solid #333;
-    }
-
-    .btn-auto:hover:not(:disabled) {
-      border-color: #555;
-    }
-
     /* Mobile footer */
     .footer-menu {
       display: none;
       position: fixed;
-      bottom: 20px;
-      left: 16px;
-      right: 16px;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #000;
+      padding: 12px 16px 20px;
       z-index: 100;
     }
 
-    .footer-menu .buttons {
-      display: flex;
-      gap: 8px;
-    }
-
     .footer-menu .btn {
-      padding: 16px 20px;
-      border-radius: 12px;
+      width: 100%;
     }
 
     .status {
-      margin-top: 32px;
+      margin-top: 24px;
       padding: 24px;
       background: #111;
       border-radius: 8px;
@@ -411,7 +355,7 @@
     }
 
     .result {
-      margin-top: 32px;
+      margin-top: 24px;
       display: none;
     }
 
@@ -479,7 +423,7 @@
     }
 
     .error {
-      margin-top: 32px;
+      margin-top: 24px;
       padding: 16px;
       background: #1a0000;
       border: 1px solid #330000;
@@ -528,15 +472,7 @@
       }
 
       .footer-menu {
-        display: flex;
-      }
-
-      .section {
-        margin-bottom: 24px;
-      }
-
-      .drop-zone {
-        padding: 20px;
+        display: block;
       }
 
       .result-header {
@@ -572,66 +508,45 @@
       <button class="nav-tab" data-page="import" onclick="switchPage('import')">Importer</button>
     </div>
 
-    <div class="category-tabs" id="categoryTabs">
-      <button class="category-tab active" data-category="snapchat">Snapchat</button>
-      <button class="category-tab" data-category="surprised">Surprised</button>
-      <button class="category-tab" data-category="shocked">Shocked</button>
-      <button class="category-tab" data-category="dynamic">Dynamic</button>
-    </div>
-
     <div id="loading" class="loading">Chargement...</div>
 
     <div id="app" class="hidden">
       <!-- Page principale -->
       <div id="pageMain" class="page active">
-      <div class="section">
-        <div class="section-header">
-          <span class="section-title">Hook</span>
-          <span class="file-count" id="hookCount"></span>
+        <div class="section">
+          <div class="section-title">Hook</div>
+          <div class="thumb-strip">
+            <button class="thumb-arrow" onclick="navigateHook(-1)">‹</button>
+            <div class="thumb-scroll" id="hookThumbs"></div>
+            <button class="thumb-arrow" onclick="navigateHook(1)">›</button>
+          </div>
+          <div class="main-preview" id="hookPreview">
+            <video id="hookPreviewVideo" loop muted playsinline webkit-playsinline></video>
+          </div>
         </div>
-        <div class="item-nav">
-          <button class="item-nav-btn" onclick="navigateHook(-1)">‹</button>
-          <span class="item-nav-name" id="hookName">—</span>
-          <button class="item-nav-btn" onclick="navigateHook(1)">›</button>
+
+        <div class="section">
+          <div class="section-title">Capture</div>
+          <div class="thumb-strip">
+            <button class="thumb-arrow" onclick="navigateCapture(-1)">‹</button>
+            <div class="thumb-scroll" id="captureThumbs"></div>
+            <button class="thumb-arrow" onclick="navigateCapture(1)">›</button>
+          </div>
+          <div class="main-preview" id="capturePreview">
+            <video id="capturePreviewVideo" loop muted playsinline webkit-playsinline></video>
+          </div>
         </div>
-        <div class="inline-preview" id="hookPreview">
-          <video id="hookPreviewVideo" loop muted playsinline webkit-playsinline></video>
+
+        <!-- Desktop button -->
+        <div class="buttons-desktop">
+          <button class="btn btn-primary" id="generateBtnDesktop" onclick="generate()">Générer</button>
         </div>
       </div>
-
-      <div class="section">
-        <div class="section-header">
-          <span class="section-title">Capture</span>
-          <span class="file-count" id="captureCount"></span>
-        </div>
-        <div class="item-nav">
-          <button class="item-nav-btn" onclick="navigateCapture(-1)">‹</button>
-          <span class="item-nav-name" id="captureName">—</span>
-          <button class="item-nav-btn" onclick="navigateCapture(1)">›</button>
-        </div>
-        <div class="inline-preview" id="capturePreview">
-          <video id="capturePreviewVideo" loop muted playsinline webkit-playsinline></video>
-        </div>
-      </div>
-
-      <!-- Desktop buttons -->
-      <div class="buttons-desktop">
-        <button class="btn btn-secondary" id="randomBtnDesktop" onclick="selectRandom()">Aléatoire</button>
-        <button class="btn btn-primary" id="generateBtnDesktop" onclick="generate()">Générer</button>
-      </div>
-
-      <div class="buttons-desktop" style="margin-top: 8px;">
-        <button class="btn btn-auto" id="autoBtnDesktop" onclick="generateAll()">Full Auto - Toutes les combinaisons</button>
-      </div>
-
-      </div><!-- /pageMain -->
 
       <!-- Page import -->
       <div id="pageImport" class="page">
         <div class="section">
-          <div class="section-header">
-            <span class="section-title">Importer un hook</span>
-          </div>
+          <div class="section-title">Importer un hook</div>
           <div class="drop-zone" id="hookDropZone" data-type="hook">
             <span class="drop-zone-icon">+</span>
             <div class="drop-zone-text">Ajouter un hook</div>
@@ -640,9 +555,7 @@
         </div>
 
         <div class="section">
-          <div class="section-header">
-            <span class="section-title">Importer une capture</span>
-          </div>
+          <div class="section-title">Importer une capture</div>
           <div class="drop-zone" id="captureDropZone" data-type="capture">
             <span class="drop-zone-icon">+</span>
             <div class="drop-zone-text">Ajouter une capture</div>
@@ -671,18 +584,14 @@
   </div>
   </div>
 
-  <!-- Mobile footer menu -->
+  <!-- Mobile footer -->
   <div class="footer-menu" id="footerMenu">
-    <div class="buttons">
-      <button class="btn btn-secondary" id="randomBtnMobile" onclick="selectRandom()">Aléatoire</button>
-      <button class="btn btn-primary" id="generateBtnMobile" onclick="generate()">Générer</button>
-    </div>
+    <button class="btn btn-primary" id="generateBtnMobile" onclick="generate()">Générer</button>
   </div>
 
   <script>
     let hooks = [];
     let captures = [];
-    let currentCategory = 'snapchat';
     let currentHookIndex = 0;
     let currentCaptureIndex = 0;
     let countdownInterval = null;
@@ -690,13 +599,6 @@
     let isGenerating = false;
 
     const ESTIMATED_TIME = 30;
-
-    const categoryPrefixes = {
-      snapchat: 'hooks-snapchat/',
-      surprised: 'hooks-surprised-face/',
-      shocked: 'hooks-shocked-face/',
-      dynamic: 'hooks-dynamic/',
-    };
 
     // Elements
     const app = document.getElementById('app');
@@ -709,72 +611,74 @@
     const result = document.getElementById('result');
     const error = document.getElementById('error');
     const errorText = document.getElementById('errorText');
-    const hookPreviewEl = document.getElementById('hookPreview');
     const hookPreviewVideo = document.getElementById('hookPreviewVideo');
-    const capturePreviewEl = document.getElementById('capturePreview');
     const capturePreviewVideo = document.getElementById('capturePreviewVideo');
-    const hookNameEl = document.getElementById('hookName');
-    const captureNameEl = document.getElementById('captureName');
+    const hookThumbs = document.getElementById('hookThumbs');
+    const captureThumbs = document.getElementById('captureThumbs');
     const footerMenu = document.getElementById('footerMenu');
     const pageMain = document.getElementById('pageMain');
     const pageImport = document.getElementById('pageImport');
-    const categoryTabs = document.getElementById('categoryTabs');
 
-    // All buttons (desktop + mobile)
     const generateBtns = [document.getElementById('generateBtnDesktop'), document.getElementById('generateBtnMobile')];
-    const randomBtns = [document.getElementById('randomBtnDesktop'), document.getElementById('randomBtnMobile')];
-    const autoBtns = [document.getElementById('autoBtnDesktop')];
-
     const refreshBtn = document.getElementById('refreshBtn');
 
-    // Filter hooks by category
-    function getFilteredHooks() {
-      return hooks.filter(h => h.category === currentCategory);
+    // Build thumbnail strip
+    function buildThumbs(container, items, type) {
+      container.innerHTML = '';
+      items.forEach((item, i) => {
+        const div = document.createElement('div');
+        div.className = 'thumb-item' + (i === 0 ? ' active' : '');
+        div.dataset.index = i;
+        div.innerHTML = `<video src="${item.url}" preload="metadata" muted playsinline></video>`;
+        div.addEventListener('click', () => {
+          if (type === 'hook') {
+            currentHookIndex = i;
+            showCurrentHook();
+          } else {
+            currentCaptureIndex = i;
+            showCurrentCapture();
+          }
+        });
+        container.appendChild(div);
+      });
+    }
+
+    function highlightThumb(container, index) {
+      container.querySelectorAll('.thumb-item').forEach((el, i) => {
+        el.classList.toggle('active', i === index);
+      });
+      // Scroll selected into view
+      const active = container.children[index];
+      if (active) {
+        active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
     }
 
     // Show current hook
     function showCurrentHook() {
-      const filtered = getFilteredHooks();
-      if (filtered.length === 0) {
-        hookNameEl.textContent = '—';
-        hookPreviewEl.classList.remove('visible');
-        hookPreviewVideo.pause();
-        hookPreviewVideo.removeAttribute('src');
-        return;
-      }
-      if (currentHookIndex >= filtered.length) currentHookIndex = 0;
-      if (currentHookIndex < 0) currentHookIndex = filtered.length - 1;
-      const item = filtered[currentHookIndex];
-      hookNameEl.textContent = item.name;
-      document.getElementById('hookCount').textContent = `${currentHookIndex + 1}/${filtered.length}`;
+      if (hooks.length === 0) return;
+      if (currentHookIndex >= hooks.length) currentHookIndex = 0;
+      if (currentHookIndex < 0) currentHookIndex = hooks.length - 1;
+      const item = hooks[currentHookIndex];
       hookPreviewVideo.src = item.url;
       hookPreviewVideo.play();
-      hookPreviewEl.classList.add('visible');
+      highlightThumb(hookThumbs, currentHookIndex);
     }
 
     // Show current capture
     function showCurrentCapture() {
-      if (captures.length === 0) {
-        captureNameEl.textContent = '—';
-        capturePreviewEl.classList.remove('visible');
-        capturePreviewVideo.pause();
-        capturePreviewVideo.removeAttribute('src');
-        return;
-      }
+      if (captures.length === 0) return;
       if (currentCaptureIndex >= captures.length) currentCaptureIndex = 0;
       if (currentCaptureIndex < 0) currentCaptureIndex = captures.length - 1;
       const item = captures[currentCaptureIndex];
-      captureNameEl.textContent = item.name;
-      document.getElementById('captureCount').textContent = `${currentCaptureIndex + 1}/${captures.length}`;
       capturePreviewVideo.src = item.url;
       capturePreviewVideo.play();
-      capturePreviewEl.classList.add('visible');
+      highlightThumb(captureThumbs, currentCaptureIndex);
     }
 
     function navigateHook(dir) {
-      const filtered = getFilteredHooks();
-      if (filtered.length === 0) return;
-      currentHookIndex = (currentHookIndex + dir + filtered.length) % filtered.length;
+      if (hooks.length === 0) return;
+      currentHookIndex = (currentHookIndex + dir + hooks.length) % hooks.length;
       showCurrentHook();
     }
 
@@ -796,6 +700,9 @@
 
         currentHookIndex = 0;
         currentCaptureIndex = 0;
+
+        buildThumbs(hookThumbs, hooks, 'hook');
+        buildThumbs(captureThumbs, captures, 'capture');
         showCurrentHook();
         showCurrentCapture();
 
@@ -805,23 +712,6 @@
         loading.textContent = 'Erreur: ' + err.message;
       }
     }
-
-    // Category tabs
-    function switchCategory(category) {
-      currentCategory = category;
-      document.querySelectorAll('.category-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.dataset.category === category);
-      });
-      currentHookIndex = 0;
-      showCurrentHook();
-    }
-
-    // Setup category tabs
-    document.getElementById('categoryTabs').addEventListener('click', (e) => {
-      if (e.target.classList.contains('category-tab')) {
-        switchCategory(e.target.dataset.category);
-      }
-    });
 
     // Refresh
     async function refresh() {
@@ -835,16 +725,13 @@
       document.querySelectorAll('.nav-tab').forEach(t => {
         t.classList.toggle('active', t.dataset.page === page);
       });
-
       if (page === 'main') {
         pageMain.classList.add('active');
         pageImport.classList.remove('active');
-        categoryTabs.style.display = '';
         footerMenu.style.display = '';
       } else {
         pageMain.classList.remove('active');
         pageImport.classList.add('active');
-        categoryTabs.style.display = 'none';
         footerMenu.style.display = 'none';
         hookPreviewVideo.pause();
         capturePreviewVideo.pause();
@@ -852,17 +739,6 @@
     }
 
     function showMainPage() { switchPage('main'); }
-
-    // Random
-    function selectRandom() {
-      const filteredHooks = getFilteredHooks();
-      if (filteredHooks.length && captures.length) {
-        currentHookIndex = Math.floor(Math.random() * filteredHooks.length);
-        currentCaptureIndex = Math.floor(Math.random() * captures.length);
-        showCurrentHook();
-        showCurrentCapture();
-      }
-    }
 
     // Drag & Drop
     function setupDropZone(dropZone, fileInput, type) {
@@ -911,14 +787,11 @@
         if (!res.ok) throw new Error(data.error);
 
         await loadFiles();
-
         dropZone.innerHTML = originalText;
 
-        // Return to main page and show the uploaded file
         showMainPage();
         if (type === 'hook') {
-          const filtered = getFilteredHooks();
-          const idx = filtered.findIndex(h => h.name === file.name);
+          const idx = hooks.findIndex(h => h.name === file.name);
           if (idx >= 0) currentHookIndex = idx;
           showCurrentHook();
         } else {
@@ -997,7 +870,6 @@
       const item = document.createElement('div');
       item.className = 'result-item';
 
-      // iOS: no download button (doesn't work), only share with "Enregistrer" label
       const downloadBtn = isIOS ? '' : `<button class="result-btn" onclick="downloadVideo('${url}', '${safeName}')">Télécharger</button>`;
       const shareBtnText = isIOS ? 'Enregistrer' : 'Partager';
 
@@ -1031,7 +903,6 @@
     }
 
     async function downloadVideo(url, name) {
-      // Desktop/Android only (not shown on iOS)
       try {
         const response = await fetch(url);
         const blob = await response.blob();
@@ -1056,7 +927,6 @@
         statusDiv.textContent = "Téléchargement de la vidéo...";
         statusEl.classList.add('visible');
 
-        // Utilise notre proxy API pour éviter les erreurs CORS
         const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
         const response = await fetch(proxyUrl);
 
@@ -1070,14 +940,12 @@
 
         statusEl.classList.remove('visible');
 
-        // Partage le fichier si supporté (iOS 15+)
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
             files: [file],
             title: 'Biblack Video',
           });
         } else if (navigator.share) {
-          // Fallback: partage l'URL
           await navigator.share({
             title: 'Biblack Video',
             url: url
@@ -1088,11 +956,8 @@
         }
       } catch (err) {
         statusEl.classList.remove('visible');
-        if (err.name === 'AbortError') {
-          return; // L'utilisateur a annulé
-        }
+        if (err.name === 'AbortError') return;
         console.error('Erreur de partage:', err);
-        // Fallback: ouvre directement l'URL
         if (confirm('Erreur lors du téléchargement. Ouvrir la vidéo dans le navigateur ?')) {
           window.open(url, '_blank');
         }
@@ -1114,26 +979,22 @@
 
     function setButtonsDisabled(disabled) {
       generateBtns.forEach(btn => { if (btn) btn.disabled = disabled; });
-      randomBtns.forEach(btn => { if (btn) btn.disabled = disabled; });
-      autoBtns.forEach(btn => { if (btn) btn.disabled = disabled; });
       isGenerating = disabled;
     }
 
-    function setButtonsText(text, original) {
+    function setButtonsText(text) {
       generateBtns.forEach(btn => { if (btn) btn.textContent = text || 'Générer'; });
     }
 
-    // Generate single
+    // Generate
     async function generate() {
-      const filteredHooks = getFilteredHooks();
-      if (filteredHooks.length === 0 || captures.length === 0) {
-        showError('Sélectionne un hook et une capture.');
+      if (hooks.length === 0 || captures.length === 0) {
+        showError('Aucun hook ou capture disponible.');
         return;
       }
 
-      const hookItem = filteredHooks[currentHookIndex];
+      const hookItem = hooks[currentHookIndex];
       const captureItem = captures[currentCaptureIndex];
-      const hookPrefix = hookItem.prefix || categoryPrefixes[currentCategory];
 
       resetUI();
       result.innerHTML = '';
@@ -1143,7 +1004,7 @@
       startProgress();
 
       try {
-        const url = `/api/merge?hook=${encodeURIComponent(hookItem.name)}&capture=${encodeURIComponent(captureItem.name)}&hookPrefix=${encodeURIComponent(hookPrefix)}`;
+        const url = `/api/merge?hook=${encodeURIComponent(hookItem.name)}&capture=${encodeURIComponent(captureItem.name)}&hookPrefix=hooks/`;
         const res = await fetch(url);
         const data = await res.json();
 
@@ -1164,65 +1025,6 @@
       } finally {
         setButtonsDisabled(false);
         setButtonsText('Générer');
-      }
-    }
-
-    // Generate all combinations (only for current category)
-    async function generateAll() {
-      const filteredHooks = getFilteredHooks();
-
-      if (filteredHooks.length === 0 || captures.length === 0) {
-        showError('Pas de fichiers disponibles dans cette catégorie.');
-        return;
-      }
-
-      const total = filteredHooks.length * captures.length;
-
-      if (!confirm(`Générer ${total} vidéos (catégorie ${currentCategory}) ?`)) return;
-
-      resetUI();
-      result.innerHTML = '';
-      setButtonsDisabled(true);
-      autoBtns.forEach(btn => { if (btn) btn.textContent = 'Génération...'; });
-      showStatus('Full Auto en cours...');
-
-      let completed = 0;
-      let errors = 0;
-
-      for (const hook of filteredHooks) {
-        for (const capture of captures) {
-          if (!isGenerating) break;
-
-          autoProgress.textContent = `${completed + 1}/${total} - ${hook.name} + ${capture.name}`;
-          startProgress(25);
-
-          try {
-            const hookPrefix = hook.prefix || categoryPrefixes[currentCategory];
-            const url = `/api/merge?hook=${encodeURIComponent(hook.name)}&capture=${encodeURIComponent(capture.name)}&hookPrefix=${encodeURIComponent(hookPrefix)}`;
-            const res = await fetch(url);
-            const data = await res.json();
-
-            if (res.ok && data.url) {
-              showResult(data.url, `${hook.name} + ${capture.name}`);
-            } else {
-              errors++;
-            }
-          } catch {
-            errors++;
-          }
-
-          completed++;
-          stopTimers();
-        }
-      }
-
-      status.classList.remove('visible');
-      autoProgress.textContent = '';
-      setButtonsDisabled(false);
-      autoBtns.forEach(btn => { if (btn) btn.textContent = 'Full Auto - Toutes les combinaisons'; });
-
-      if (errors > 0) {
-        showError(`Terminé avec ${errors} erreur(s) sur ${total}.`);
       }
     }
 
