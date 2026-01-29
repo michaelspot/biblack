@@ -671,20 +671,31 @@
     const generateBtns = [document.getElementById('generateBtnDesktop'), document.getElementById('generateBtnMobile')];
     const refreshBtn = document.getElementById('refreshBtn');
 
-    // Build thumbnail strip
+    // Build thumbnail strip - returns promise that resolves when all videos loaded
     function buildThumbs(container, items, type) {
       container.innerHTML = '';
+      const loadPromises = [];
+
       items.forEach((item, i) => {
         const div = document.createElement('div');
         div.className = 'thumb-item' + (i === 0 ? ' active' : '');
         div.dataset.index = i;
         const video = document.createElement('video');
         video.src = item.url + '#t=0.1';
-        video.preload = 'metadata';
+        video.preload = 'auto';
         video.muted = true;
         video.playsInline = true;
         video.setAttribute('playsinline', '');
         video.setAttribute('webkit-playsinline', '');
+
+        // Wait for video to load first frame
+        const loadPromise = new Promise((resolve) => {
+          video.onloadeddata = () => resolve();
+          video.onerror = () => resolve(); // Don't block on errors
+          setTimeout(() => resolve(), 5000); // Timeout after 5s
+        });
+        loadPromises.push(loadPromise);
+
         div.appendChild(video);
         div.addEventListener('click', () => {
           if (type === 'hook') {
@@ -697,6 +708,8 @@
         });
         container.appendChild(div);
       });
+
+      return Promise.all(loadPromises);
     }
 
     function highlightThumb(container, index) {
@@ -778,8 +791,13 @@
         currentHookIndex = 0;
         currentCaptureIndex = 0;
 
-        buildThumbs(hookThumbs, hooks, 'hook');
-        buildThumbs(captureThumbs, captures, 'capture');
+        // Build thumbnails and wait for ALL to load
+        loading.textContent = 'Chargement des aperçus...';
+        await Promise.all([
+          buildThumbs(hookThumbs, hooks, 'hook'),
+          buildThumbs(captureThumbs, captures, 'capture')
+        ]);
+
         showCurrentHook();
         showCurrentCapture();
 
