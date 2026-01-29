@@ -672,11 +672,12 @@
     const refreshBtn = document.getElementById('refreshBtn');
 
     // Build thumbnail strip - returns promise that resolves when all videos loaded
-    function buildThumbs(container, items, type) {
+    async function buildThumbs(container, items, type) {
       container.innerHTML = '';
-      const loadPromises = [];
 
-      items.forEach((item, i) => {
+      // Load thumbnails sequentially to avoid overwhelming the browser
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
         const div = document.createElement('div');
         div.className = 'thumb-item' + (i === 0 ? ' active' : '');
         div.dataset.index = i;
@@ -687,14 +688,6 @@
         video.playsInline = true;
         video.setAttribute('playsinline', '');
         video.setAttribute('webkit-playsinline', '');
-
-        // Wait for video to load first frame
-        const loadPromise = new Promise((resolve) => {
-          video.onloadeddata = () => resolve();
-          video.onerror = () => resolve(); // Don't block on errors
-          setTimeout(() => resolve(), 5000); // Timeout after 5s
-        });
-        loadPromises.push(loadPromise);
 
         div.appendChild(video);
         div.addEventListener('click', () => {
@@ -707,9 +700,15 @@
           }
         });
         container.appendChild(div);
-      });
 
-      return Promise.all(loadPromises);
+        // Wait for this video to load before next
+        await new Promise((resolve) => {
+          video.oncanplaythrough = () => resolve();
+          video.onloadeddata = () => resolve();
+          video.onerror = () => resolve();
+          setTimeout(() => resolve(), 10000);
+        });
+      }
     }
 
     function highlightThumb(container, index) {
