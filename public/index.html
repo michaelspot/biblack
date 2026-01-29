@@ -722,26 +722,52 @@
       }
     }
 
-    // Show current hook
-    function showCurrentHook() {
-      if (hooks.length === 0) return;
+    // Show current hook - returns promise when video ready
+    function showCurrentHook(waitForLoad = false) {
+      if (hooks.length === 0) return Promise.resolve();
       if (currentHookIndex >= hooks.length) currentHookIndex = 0;
       if (currentHookIndex < 0) currentHookIndex = hooks.length - 1;
       const item = hooks[currentHookIndex];
       hookPreviewVideo.src = item.url;
-      hookPreviewVideo.play();
       highlightThumb(hookThumbs, currentHookIndex);
+
+      if (waitForLoad) {
+        return new Promise((resolve) => {
+          hookPreviewVideo.oncanplaythrough = () => {
+            hookPreviewVideo.play();
+            resolve();
+          };
+          hookPreviewVideo.onerror = () => resolve();
+          setTimeout(() => { hookPreviewVideo.play(); resolve(); }, 5000);
+        });
+      } else {
+        hookPreviewVideo.play();
+        return Promise.resolve();
+      }
     }
 
-    // Show current capture
-    function showCurrentCapture() {
-      if (captures.length === 0) return;
+    // Show current capture - returns promise when video ready
+    function showCurrentCapture(waitForLoad = false) {
+      if (captures.length === 0) return Promise.resolve();
       if (currentCaptureIndex >= captures.length) currentCaptureIndex = 0;
       if (currentCaptureIndex < 0) currentCaptureIndex = captures.length - 1;
       const item = captures[currentCaptureIndex];
       capturePreviewVideo.src = item.url;
-      capturePreviewVideo.play();
       highlightThumb(captureThumbs, currentCaptureIndex);
+
+      if (waitForLoad) {
+        return new Promise((resolve) => {
+          capturePreviewVideo.oncanplaythrough = () => {
+            capturePreviewVideo.play();
+            resolve();
+          };
+          capturePreviewVideo.onerror = () => resolve();
+          setTimeout(() => { capturePreviewVideo.play(); resolve(); }, 5000);
+        });
+      } else {
+        capturePreviewVideo.play();
+        return Promise.resolve();
+      }
     }
 
     function navigateHook(dir) {
@@ -798,8 +824,12 @@
           buildThumbs(captureThumbs, captures, 'capture')
         ]);
 
-        showCurrentHook();
-        showCurrentCapture();
+        // Wait for main previews to load too
+        loading.textContent = 'Chargement des vidéos...';
+        await Promise.all([
+          showCurrentHook(true),
+          showCurrentCapture(true)
+        ]);
 
         loading.classList.add('hidden');
         app.classList.remove('hidden');
