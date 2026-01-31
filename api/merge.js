@@ -48,6 +48,15 @@ function downloadFile(url, destPath) {
   });
 }
 
+function probeVideo(filePath) {
+  return new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(filePath, (err, metadata) => {
+      if (err) reject(err);
+      else resolve(metadata);
+    });
+  });
+}
+
 export default async function handler(req, res) {
   const { hook, capture, hookPrefix } = req.query;
 
@@ -62,6 +71,8 @@ export default async function handler(req, res) {
   const hookPath = `/tmp/hook-${timestamp}${path.extname(hook)}`;
   const capturePath = `/tmp/capture-${timestamp}${path.extname(capture)}`;
   const outputPath = `/tmp/output-${timestamp}.mp4`;
+  const concatListPath = `/tmp/concat-${timestamp}.txt`;
+  const tempFiles = [hookPath, capturePath, outputPath, concatListPath];
 
   try {
     // Télécharge les deux fichiers en parallèle
@@ -72,59 +83,88 @@ export default async function handler(req, res) {
     ]);
     console.log("Fichiers téléchargés");
 
-    // Filtre de base (drawtext non dispo dans ffmpeg-static)
-    const filterComplex = [
-      "[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1[v0]",
-      "[1:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1[v1]",
-      "[v0][v1]concat=n=2:v=1:a=0[outv]"
-    ];
+    // Analyse les vidéos pour déterminer le mode de fusion
+    const [hookProbe, captureProbe] = await Promise.all([
+      probeVideo(hookPath),
+      probeVideo(capturePath),
+    ]);
 
-    // Fusionne les vidéos
-    await new Promise((resolve, reject) => {
-      ffmpeg()
-        .input(hookPath)
-        .input(capturePath)
-        .on("start", (cmd) => console.log("FFmpeg command:", cmd))
-        .on("error", (err) => {
-          console.error("FFmpeg error:", err);
-          reject(err);
-        })
-        .on("end", () => {
-          console.log("Fusion terminée");
-          resolve();
-        })
-        .complexFilter(filterComplex)
-        .outputOptions([
-          "-map", "[outv]",
-          "-c:v", "libx264",
-          "-preset", "ultrafast",
-          "-crf", "23",
-          "-movflags", "+faststart",
-          "-an"
-        ])
-        .output(outputPath)
-        .run();
-    });
+    const hookVideo = hookProbe.streams.find(s => s.codec_type === "video");
+    const captureVideo = captureProbe.streams.find(s => s.codec_type === "video");
+
+    // Fast path: si les deux sont H.264 en 1080x1920, concat sans ré-encodage
+    const canFastConcat = hookVideo && captureVideo &&
+      hookVideo.codec_name === "h264" && captureVideo.codec_name === "h264" &&
+      hookVideo.width === 1080 && hookVideo.height === 1920 &&
+      captureVideo.width === 1080 && captureVideo.height === 1920;
+
+    if (canFastConcat) {
+      console.log("Fast concat (pas de ré-encodage)");
+      fs.writeFileSync(concatListPath, `file '${hookPath}'\nfile '${capturePath}'\n`);
+
+      await new Promise((resolve, reject) => {
+        ffmpeg()
+          .input(concatListPath)
+          .inputOptions(["-f", "concat", "-safe", "0"])
+          .outputOptions(["-c", "copy", "-movflags", "+faststart"])
+          .output(outputPath)
+          .on("start", (cmd) => console.log("FFmpeg command:", cmd))
+          .on("end", () => { console.log("Fast concat terminé"); resolve(); })
+          .on("error", (err) => { console.error("FFmpeg error:", err); reject(err); })
+          .run();
+      });
+    } else {
+      console.log(`Re-encodage (hook: ${hookVideo?.width}x${hookVideo?.height} ${hookVideo?.codec_name}, capture: ${captureVideo?.width}x${captureVideo?.height} ${captureVideo?.codec_name})`);
+
+      const filterComplex = [
+        "[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1[v0]",
+        "[1:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1[v1]",
+        "[v0][v1]concat=n=2:v=1:a=0[outv]"
+      ];
+
+      await new Promise((resolve, reject) => {
+        ffmpeg()
+          .input(hookPath)
+          .input(capturePath)
+          .on("start", (cmd) => console.log("FFmpeg command:", cmd))
+          .on("error", (err) => { console.error("FFmpeg error:", err); reject(err); })
+          .on("end", () => { console.log("Fusion terminée"); resolve(); })
+          .complexFilter(filterComplex)
+          .outputOptions([
+            "-map", "[outv]",
+            "-c:v", "libx264",
+            "-preset", "ultrafast",
+            "-crf", "23",
+            "-movflags", "+faststart",
+            "-threads", "0",
+            "-an"
+          ])
+          .output(outputPath)
+          .run();
+      });
+    }
 
     // Vérifie que le fichier existe
     if (!fs.existsSync(outputPath)) {
       throw new Error("Le fichier de sortie n'a pas été créé.");
     }
 
-    // Upload vers R2
+    // Upload vers R2 en streaming
     console.log("Upload vers R2...");
-    const fileBuffer = fs.readFileSync(outputPath);
     const fileName = `montages/final-${timestamp}.mp4`;
+    const fileStream = fs.createReadStream(outputPath);
+    const fileSize = fs.statSync(outputPath).size;
 
     await s3.send(new PutObjectCommand({
       Bucket: process.env.R2_BUCKET_NAME,
       Key: fileName,
-      Body: fileBuffer,
+      Body: fileStream,
+      ContentLength: fileSize,
       ContentType: "video/mp4",
     }));
 
     // Nettoie les fichiers temporaires
-    [hookPath, capturePath, outputPath].forEach(f => {
+    tempFiles.forEach(f => {
       if (fs.existsSync(f)) fs.unlinkSync(f);
     });
 
@@ -138,7 +178,7 @@ export default async function handler(req, res) {
     console.error("Error:", error);
 
     // Nettoie les fichiers temporaires en cas d'erreur
-    [hookPath, capturePath, outputPath].forEach(f => {
+    tempFiles.forEach(f => {
       if (fs.existsSync(f)) fs.unlinkSync(f);
     });
 
