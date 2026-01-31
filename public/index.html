@@ -671,7 +671,7 @@
     const generateBtns = [document.getElementById('generateBtnDesktop'), document.getElementById('generateBtnMobile')];
     const refreshBtn = document.getElementById('refreshBtn');
 
-    // Build thumbnail strip - captures frames as static images
+    // Build thumbnail strip using poster images
     function buildThumbs(container, items, type) {
       container.innerHTML = '';
 
@@ -681,15 +681,17 @@
         div.className = 'thumb-item' + (i === 0 ? ' active' : '');
         div.dataset.index = i;
 
-        // Start with a grey placeholder
-        const canvas = document.createElement('canvas');
-        canvas.width = 90;
-        canvas.height = 160;
-        canvas.style.width = '100%';
-        canvas.style.height = '100%';
-        canvas.style.objectFit = 'cover';
-        div.appendChild(canvas);
+        const img = document.createElement('img');
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+        img.loading = 'eager';
 
+        // Use cached poster if available, otherwise generate via API
+        const posterSrc = item.posterUrl || `/api/poster?type=${type}&filename=${encodeURIComponent(item.name)}`;
+        img.src = posterSrc;
+
+        div.appendChild(img);
         div.addEventListener('click', () => {
           if (type === 'hook') {
             currentHookIndex = i;
@@ -700,54 +702,7 @@
           }
         });
         container.appendChild(div);
-
-        // Capture frame in background - no await, no blocking
-        captureThumbFrame(canvas, item.url);
       }
-    }
-
-    // Capture a single video frame to canvas, then free the video
-    function captureThumbFrame(canvas, url) {
-      const video = document.createElement('video');
-      video.crossOrigin = 'anonymous';
-      video.preload = 'metadata';
-      video.muted = true;
-      video.playsInline = true;
-      video.src = url + '#t=0.1';
-
-      const done = () => {
-        video.removeAttribute('src');
-        video.load();
-      };
-
-      video.onloadeddata = () => {
-        try {
-          const ctx = canvas.getContext('2d');
-          const vw = video.videoWidth || 90;
-          const vh = video.videoHeight || 160;
-          // Cover-fit: crop to fill the canvas
-          const scale = Math.max(canvas.width / vw, canvas.height / vh);
-          const sw = canvas.width / scale;
-          const sh = canvas.height / scale;
-          const sx = (vw - sw) / 2;
-          const sy = (vh - sh) / 2;
-          ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-        } catch (e) {
-          // CORS issue - use a simple fallback: show video element instead
-          const fallback = document.createElement('video');
-          fallback.src = url + '#t=0.1';
-          fallback.preload = 'metadata';
-          fallback.muted = true;
-          fallback.playsInline = true;
-          fallback.style.width = '100%';
-          fallback.style.height = '100%';
-          fallback.style.objectFit = 'cover';
-          canvas.replaceWith(fallback);
-        }
-        done();
-      };
-      video.onerror = () => done();
-      setTimeout(() => done(), 5000);
     }
 
     function highlightThumb(container, index) {
@@ -760,52 +715,34 @@
       }
     }
 
-    // Show current hook - returns promise when video ready
-    function showCurrentHook(waitForLoad = false) {
-      if (hooks.length === 0) return Promise.resolve();
+    // Show current hook
+    function showCurrentHook() {
+      if (hooks.length === 0) return;
       if (currentHookIndex >= hooks.length) currentHookIndex = 0;
       if (currentHookIndex < 0) currentHookIndex = hooks.length - 1;
       const item = hooks[currentHookIndex];
-      hookPreviewVideo.src = item.url;
-      highlightThumb(hookThumbs, currentHookIndex);
 
-      if (waitForLoad) {
-        return new Promise((resolve) => {
-          hookPreviewVideo.onloadeddata = () => {
-            hookPreviewVideo.play();
-            resolve();
-          };
-          hookPreviewVideo.onerror = () => resolve();
-          setTimeout(() => { hookPreviewVideo.play(); resolve(); }, 3000);
-        });
-      } else {
-        hookPreviewVideo.play();
-        return Promise.resolve();
-      }
+      // Show poster instantly while video loads
+      const posterSrc = item.posterUrl || `/api/poster?type=hook&filename=${encodeURIComponent(item.name)}`;
+      hookPreviewVideo.poster = posterSrc;
+      hookPreviewVideo.src = item.url;
+      hookPreviewVideo.play().catch(() => {});
+      highlightThumb(hookThumbs, currentHookIndex);
     }
 
-    // Show current capture - returns promise when video ready
-    function showCurrentCapture(waitForLoad = false) {
-      if (captures.length === 0) return Promise.resolve();
+    // Show current capture
+    function showCurrentCapture() {
+      if (captures.length === 0) return;
       if (currentCaptureIndex >= captures.length) currentCaptureIndex = 0;
       if (currentCaptureIndex < 0) currentCaptureIndex = captures.length - 1;
       const item = captures[currentCaptureIndex];
-      capturePreviewVideo.src = item.url;
-      highlightThumb(captureThumbs, currentCaptureIndex);
 
-      if (waitForLoad) {
-        return new Promise((resolve) => {
-          capturePreviewVideo.onloadeddata = () => {
-            capturePreviewVideo.play();
-            resolve();
-          };
-          capturePreviewVideo.onerror = () => resolve();
-          setTimeout(() => { capturePreviewVideo.play(); resolve(); }, 3000);
-        });
-      } else {
-        capturePreviewVideo.play();
-        return Promise.resolve();
-      }
+      // Show poster instantly while video loads
+      const posterSrc = item.posterUrl || `/api/poster?type=capture&filename=${encodeURIComponent(item.name)}`;
+      capturePreviewVideo.poster = posterSrc;
+      capturePreviewVideo.src = item.url;
+      capturePreviewVideo.play().catch(() => {});
+      highlightThumb(captureThumbs, currentCaptureIndex);
     }
 
     function navigateHook(dir) {

@@ -27,11 +27,18 @@ export default async function handler(req, res) {
 
     const folder = type === 'hook' ? 'hooks' : 'captures';
     const key = `${folder}/${filename}`;
+    const posterKey = `posters/${folder}/${filename}.jpg`;
 
-    await s3.send(new DeleteObjectCommand({
-      Bucket: process.env.R2_BUCKET_NAME,
-      Key: key,
-    }));
+    await Promise.all([
+      s3.send(new DeleteObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: key,
+      })),
+      s3.send(new DeleteObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: posterKey,
+      })).catch(() => {}),
+    ]);
 
     res.status(200).json({
       message: 'Fichier supprimé',
