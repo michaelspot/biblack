@@ -671,25 +671,25 @@
     const generateBtns = [document.getElementById('generateBtnDesktop'), document.getElementById('generateBtnMobile')];
     const refreshBtn = document.getElementById('refreshBtn');
 
-    // Build thumbnail strip - returns promise that resolves when all thumbnails loaded
-    async function buildThumbs(container, items, type) {
+    // Build thumbnail strip - captures frames as static images
+    function buildThumbs(container, items, type) {
       container.innerHTML = '';
 
-      const promises = [];
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         const div = document.createElement('div');
         div.className = 'thumb-item' + (i === 0 ? ' active' : '');
         div.dataset.index = i;
-        const video = document.createElement('video');
-        video.src = item.url + '#t=0.1';
-        video.preload = 'metadata';
-        video.muted = true;
-        video.playsInline = true;
-        video.setAttribute('playsinline', '');
-        video.setAttribute('webkit-playsinline', '');
 
-        div.appendChild(video);
+        // Start with a grey placeholder
+        const canvas = document.createElement('canvas');
+        canvas.width = 90;
+        canvas.height = 160;
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        canvas.style.objectFit = 'cover';
+        div.appendChild(canvas);
+
         div.addEventListener('click', () => {
           if (type === 'hook') {
             currentHookIndex = i;
@@ -701,14 +701,53 @@
         });
         container.appendChild(div);
 
-        // Load all thumbnails in parallel (metadata only = lightweight)
-        promises.push(new Promise((resolve) => {
-          video.onloadeddata = () => resolve();
-          video.onerror = () => resolve();
-          setTimeout(() => resolve(), 5000);
-        }));
+        // Capture frame in background - no await, no blocking
+        captureThumbFrame(canvas, item.url);
       }
-      await Promise.all(promises);
+    }
+
+    // Capture a single video frame to canvas, then free the video
+    function captureThumbFrame(canvas, url) {
+      const video = document.createElement('video');
+      video.crossOrigin = 'anonymous';
+      video.preload = 'metadata';
+      video.muted = true;
+      video.playsInline = true;
+      video.src = url + '#t=0.1';
+
+      const done = () => {
+        video.removeAttribute('src');
+        video.load();
+      };
+
+      video.onloadeddata = () => {
+        try {
+          const ctx = canvas.getContext('2d');
+          const vw = video.videoWidth || 90;
+          const vh = video.videoHeight || 160;
+          // Cover-fit: crop to fill the canvas
+          const scale = Math.max(canvas.width / vw, canvas.height / vh);
+          const sw = canvas.width / scale;
+          const sh = canvas.height / scale;
+          const sx = (vw - sw) / 2;
+          const sy = (vh - sh) / 2;
+          ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+        } catch (e) {
+          // CORS issue - use a simple fallback: show video element instead
+          const fallback = document.createElement('video');
+          fallback.src = url + '#t=0.1';
+          fallback.preload = 'metadata';
+          fallback.muted = true;
+          fallback.playsInline = true;
+          fallback.style.width = '100%';
+          fallback.style.height = '100%';
+          fallback.style.objectFit = 'cover';
+          canvas.replaceWith(fallback);
+        }
+        done();
+      };
+      video.onerror = () => done();
+      setTimeout(() => done(), 5000);
     }
 
     function highlightThumb(container, index) {
@@ -816,22 +855,17 @@
         currentHookIndex = 0;
         currentCaptureIndex = 0;
 
-        // Build thumbnails and wait for ALL to load
-        loading.textContent = 'Chargement des aperçus...';
-        await Promise.all([
-          buildThumbs(hookThumbs, hooks, 'hook'),
-          buildThumbs(captureThumbs, captures, 'capture')
-        ]);
+        // Build thumbnails (non-blocking, frames load in background)
+        buildThumbs(hookThumbs, hooks, 'hook');
+        buildThumbs(captureThumbs, captures, 'capture');
 
-        // Wait for main previews to load too
-        loading.textContent = 'Chargement des vidéos...';
-        await Promise.all([
-          showCurrentHook(true),
-          showCurrentCapture(true)
-        ]);
-
+        // Show app immediately, don't wait for videos
         loading.classList.add('hidden');
         app.classList.remove('hidden');
+
+        // Start main previews in background
+        showCurrentHook();
+        showCurrentCapture();
       } catch (err) {
         loading.textContent = 'Erreur: ' + err.message;
       }
