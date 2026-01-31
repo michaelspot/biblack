@@ -566,7 +566,7 @@
           <div class="preview-container">
             <button class="btn-delete" onclick="deleteFile('hook')" title="Supprimer"><i data-lucide="trash-2"></i></button>
             <div class="main-preview" id="hookPreview">
-              <video id="hookPreviewVideo" loop muted playsinline webkit-playsinline preload="auto" autoplay></video>
+              <video id="hookPreviewVideo" loop muted playsinline webkit-playsinline preload="metadata" autoplay></video>
             </div>
           </div>
         </div>
@@ -581,7 +581,7 @@
           <div class="preview-container">
             <button class="btn-delete" onclick="deleteFile('capture')" title="Supprimer"><i data-lucide="trash-2"></i></button>
             <div class="main-preview" id="capturePreview">
-              <video id="capturePreviewVideo" loop muted playsinline webkit-playsinline preload="auto" autoplay></video>
+              <video id="capturePreviewVideo" loop muted playsinline webkit-playsinline preload="metadata" autoplay></video>
             </div>
           </div>
         </div>
@@ -671,11 +671,11 @@
     const generateBtns = [document.getElementById('generateBtnDesktop'), document.getElementById('generateBtnMobile')];
     const refreshBtn = document.getElementById('refreshBtn');
 
-    // Build thumbnail strip - returns promise that resolves when all videos loaded
+    // Build thumbnail strip - returns promise that resolves when all thumbnails loaded
     async function buildThumbs(container, items, type) {
       container.innerHTML = '';
 
-      // Load thumbnails sequentially to avoid overwhelming the browser
+      const promises = [];
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         const div = document.createElement('div');
@@ -683,7 +683,7 @@
         div.dataset.index = i;
         const video = document.createElement('video');
         video.src = item.url + '#t=0.1';
-        video.preload = 'auto';
+        video.preload = 'metadata';
         video.muted = true;
         video.playsInline = true;
         video.setAttribute('playsinline', '');
@@ -701,14 +701,14 @@
         });
         container.appendChild(div);
 
-        // Wait for this video to load before next
-        await new Promise((resolve) => {
-          video.oncanplaythrough = () => resolve();
+        // Load all thumbnails in parallel (metadata only = lightweight)
+        promises.push(new Promise((resolve) => {
           video.onloadeddata = () => resolve();
           video.onerror = () => resolve();
-          setTimeout(() => resolve(), 10000);
-        });
+          setTimeout(() => resolve(), 5000);
+        }));
       }
+      await Promise.all(promises);
     }
 
     function highlightThumb(container, index) {
@@ -732,12 +732,12 @@
 
       if (waitForLoad) {
         return new Promise((resolve) => {
-          hookPreviewVideo.oncanplaythrough = () => {
+          hookPreviewVideo.onloadeddata = () => {
             hookPreviewVideo.play();
             resolve();
           };
           hookPreviewVideo.onerror = () => resolve();
-          setTimeout(() => { hookPreviewVideo.play(); resolve(); }, 5000);
+          setTimeout(() => { hookPreviewVideo.play(); resolve(); }, 3000);
         });
       } else {
         hookPreviewVideo.play();
@@ -756,12 +756,12 @@
 
       if (waitForLoad) {
         return new Promise((resolve) => {
-          capturePreviewVideo.oncanplaythrough = () => {
+          capturePreviewVideo.onloadeddata = () => {
             capturePreviewVideo.play();
             resolve();
           };
           capturePreviewVideo.onerror = () => resolve();
-          setTimeout(() => { capturePreviewVideo.play(); resolve(); }, 5000);
+          setTimeout(() => { capturePreviewVideo.play(); resolve(); }, 3000);
         });
       } else {
         capturePreviewVideo.play();
