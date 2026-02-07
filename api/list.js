@@ -48,8 +48,10 @@ export default async function handler(req, res) {
           url: `${publicBaseUrl}/${item.Key}`,
           posterUrl: hookPosterSet.has(name) ? `${publicBaseUrl}/posters/hooks/${name}.jpg` : null,
           size: item.Size,
+          lastModified: item.LastModified,
         };
-      });
+      })
+      .sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
 
     const captures = (capturesResponse.Contents || [])
       .filter(item => item.Key !== "captures/")
@@ -60,8 +62,10 @@ export default async function handler(req, res) {
           url: `${publicBaseUrl}/${item.Key}`,
           posterUrl: capturePosterSet.has(name) ? `${publicBaseUrl}/posters/captures/${name}.jpg` : null,
           size: item.Size,
+          lastModified: item.LastModified,
         };
-      });
+      })
+      .sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
 
     res.status(200).json({ hooks, captures });
   } catch (error) {
