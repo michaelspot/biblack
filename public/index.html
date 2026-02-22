@@ -750,6 +750,11 @@
           </div>
           <div class="bulk-list" id="bulkTexteThumbs"></div>
         </div>
+
+        <!-- Desktop button -->
+        <div class="buttons-desktop">
+          <button class="btn btn-primary" id="bulkGenerateBtnDesktop" onclick="bulkGenerate()">Bulk Générer</button>
+        </div>
       </div>
 
       <!-- Page import -->
@@ -796,6 +801,9 @@
   <!-- Mobile footer -->
   <div class="footer-menu" id="footerMenu">
     <button class="btn btn-primary" id="generateBtnMobile" onclick="generate()">Générer</button>
+  </div>
+  <div class="footer-menu" id="footerMenuBulk" style="display:none">
+    <button class="btn btn-primary" id="bulkGenerateBtnMobile" onclick="bulkGenerate()">Bulk Générer</button>
   </div>
 
   <script>
@@ -1130,19 +1138,23 @@
       pageImport.classList.remove('active');
       pageBulk.classList.remove('active');
 
+      const footerMenuBulk = document.getElementById('footerMenuBulk');
       if (page === 'main') {
         pageMain.classList.add('active');
         footerMenu.style.display = '';
+        footerMenuBulk.style.display = 'none';
         bulkHookPreviewVideo.pause();
         bulkCapturePreviewVideo.pause();
       } else if (page === 'bulk') {
         pageBulk.classList.add('active');
         footerMenu.style.display = 'none';
+        footerMenuBulk.style.display = '';
         hookPreviewVideo.pause();
         capturePreviewVideo.pause();
       } else {
         pageImport.classList.add('active');
         footerMenu.style.display = 'none';
+        footerMenuBulk.style.display = 'none';
         hookPreviewVideo.pause();
         capturePreviewVideo.pause();
         bulkHookPreviewVideo.pause();
@@ -1431,6 +1443,83 @@
         setButtonsDisabled(false);
         setButtonsText('Générer');
       }
+    }
+
+    // Bulk Generate
+    const bulkBtns = [document.getElementById('bulkGenerateBtnDesktop'), document.getElementById('bulkGenerateBtnMobile')];
+
+    function setBulkButtonsDisabled(disabled) {
+      bulkBtns.forEach(btn => { if (btn) btn.disabled = disabled; });
+    }
+
+    function setBulkButtonsText(text) {
+      bulkBtns.forEach(btn => { if (btn) btn.textContent = text || 'Bulk Générer'; });
+    }
+
+    async function bulkGenerate() {
+      const selHooks = [...bulkSelected.hooks].map(i => hooks[i]);
+      const selCaptures = [...bulkSelected.captures].map(i => captures[i]);
+      const selMusiques = [...bulkSelected.musiques].map(i => musiques[i]);
+      const selTextes = [...bulkSelected.textes].map(i => textes[i]);
+
+      if (selHooks.length === 0 || selCaptures.length === 0) {
+        showError('Sélectionne au moins 1 hook et 1 capture.');
+        return;
+      }
+
+      // Toutes les combinaisons
+      const combinations = [];
+      const mList = selMusiques.length > 0 ? selMusiques : [null];
+      const tList = selTextes.length > 0 ? selTextes : [null];
+      for (const h of selHooks) {
+        for (const c of selCaptures) {
+          for (const m of mList) {
+            for (const t of tList) {
+              combinations.push({ hook: h, capture: c, musique: m, texte: t });
+            }
+          }
+        }
+      }
+
+      resetUI();
+      result.innerHTML = '';
+      setBulkButtonsDisabled(true);
+      showStatus(`0/${combinations.length}`);
+      progressBar.style.width = '0%';
+
+      let completed = 0;
+      let errors = 0;
+
+      for (const combo of combinations) {
+        statusText.textContent = `${completed + 1}/${combinations.length}`;
+        progressBar.style.width = `${(completed / combinations.length) * 100}%`;
+
+        try {
+          let url = `/api/bulk-merge?hook=${encodeURIComponent(combo.hook.name)}&capture=${encodeURIComponent(combo.capture.name)}`;
+          if (combo.musique) url += `&musique=${encodeURIComponent(combo.musique.name)}`;
+          if (combo.texte) {
+            const texteStr = typeof combo.texte === 'string' ? combo.texte : (combo.texte.text || combo.texte.name || '');
+            url += `&texte=${encodeURIComponent(texteStr)}`;
+          }
+
+          const res = await fetch(url);
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error);
+
+          const name = combo.hook.name.replace(/\.[^/.]+$/, '') + ' + ' + combo.capture.name.replace(/\.[^/.]+$/, '');
+          showResult(data.url, name);
+        } catch (err) {
+          errors++;
+          console.error('Bulk merge error:', err);
+        }
+        completed++;
+      }
+
+      progressBar.style.width = '100%';
+      statusText.textContent = `Terminé : ${completed - errors}/${combinations.length}`;
+      setTimeout(() => { status.classList.remove('visible'); }, 2000);
+      setBulkButtonsDisabled(false);
+      setBulkButtonsText('Bulk Générer');
     }
 
     // Init
