@@ -32,7 +32,7 @@ export default async function handler(req, res) {
       })),
       s3.send(new ListObjectsV2Command({
         Bucket: process.env.R2_BUCKET_NAME,
-        Prefix: "musiques/",
+        Prefix: "musique/",
       })),
       s3.send(new ListObjectsV2Command({
         Bucket: process.env.R2_BUCKET_NAME,
@@ -76,9 +76,9 @@ export default async function handler(req, res) {
       .sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
 
     const musiques = (musiquesResponse.Contents || [])
-      .filter(item => item.Key !== "musiques/")
+      .filter(item => item.Key !== "musique/")
       .map(item => ({
-        name: item.Key.replace("musiques/", ""),
+        name: item.Key.replace("musique/", ""),
         url: `${publicBaseUrl}/${item.Key}`,
         size: item.Size,
         lastModified: item.LastModified,
