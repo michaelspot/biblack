@@ -240,6 +240,33 @@
       display: block;
     }
 
+    .main-preview-small {
+      border-radius: 10px;
+      overflow: hidden;
+      background: #111;
+      aspect-ratio: 9 / 16;
+      max-height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .main-preview-small video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .section-empty {
+      border: 1px dashed #333;
+      border-radius: 8px;
+      padding: 24px 16px;
+      text-align: center;
+      color: #444;
+      font-size: 13px;
+    }
+
     .btn-delete {
       position: absolute;
       top: 8px;
@@ -549,6 +576,7 @@
     <div class="nav-tabs" id="navTabs">
       <button class="nav-tab active" data-page="main" onclick="switchPage('main')">Montage</button>
       <button class="nav-tab" data-page="import" onclick="switchPage('import')">Importer</button>
+      <button class="nav-tab" data-page="bulk" onclick="switchPage('bulk')">Bulk</button>
     </div>
 
     <div id="loading" class="loading">Chargement...</div>
@@ -589,6 +617,49 @@
         <!-- Desktop button -->
         <div class="buttons-desktop">
           <button class="btn btn-primary" id="generateBtnDesktop" onclick="generate()">Générer</button>
+        </div>
+      </div>
+
+      <!-- Page Bulk -->
+      <div id="pageBulk" class="page">
+        <div class="section">
+          <div class="section-title">Hook</div>
+          <div class="thumb-strip">
+            <button class="thumb-arrow" onclick="navigateBulkHook(-1)">‹</button>
+            <div class="thumb-scroll" id="bulkHookThumbs"></div>
+            <button class="thumb-arrow" onclick="navigateBulkHook(1)">›</button>
+          </div>
+          <div class="preview-container">
+            <button class="btn-delete" onclick="deleteFile('hook')" title="Supprimer"><i data-lucide="trash-2"></i></button>
+            <div class="main-preview-small" id="bulkHookPreview">
+              <video id="bulkHookPreviewVideo" loop muted playsinline webkit-playsinline preload="metadata" autoplay></video>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Capture</div>
+          <div class="thumb-strip">
+            <button class="thumb-arrow" onclick="navigateBulkCapture(-1)">‹</button>
+            <div class="thumb-scroll" id="bulkCaptureThumbs"></div>
+            <button class="thumb-arrow" onclick="navigateBulkCapture(1)">›</button>
+          </div>
+          <div class="preview-container">
+            <button class="btn-delete" onclick="deleteFile('capture')" title="Supprimer"><i data-lucide="trash-2"></i></button>
+            <div class="main-preview-small" id="bulkCapturePreview">
+              <video id="bulkCapturePreviewVideo" loop muted playsinline webkit-playsinline preload="metadata" autoplay></video>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Musique</div>
+          <div class="section-empty">Bientôt disponible</div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Texte</div>
+          <div class="section-empty">Bientôt disponible</div>
         </div>
       </div>
 
@@ -643,6 +714,8 @@
     let captures = [];
     let currentHookIndex = 0;
     let currentCaptureIndex = 0;
+    let currentBulkHookIndex = 0;
+    let currentBulkCaptureIndex = 0;
     let countdownInterval = null;
     let progressInterval = null;
     let isGenerating = false;
@@ -667,12 +740,17 @@
     const footerMenu = document.getElementById('footerMenu');
     const pageMain = document.getElementById('pageMain');
     const pageImport = document.getElementById('pageImport');
+    const pageBulk = document.getElementById('pageBulk');
+    const bulkHookPreviewVideo = document.getElementById('bulkHookPreviewVideo');
+    const bulkCapturePreviewVideo = document.getElementById('bulkCapturePreviewVideo');
+    const bulkHookThumbs = document.getElementById('bulkHookThumbs');
+    const bulkCaptureThumbs = document.getElementById('bulkCaptureThumbs');
 
     const generateBtns = [document.getElementById('generateBtnDesktop'), document.getElementById('generateBtnMobile')];
     const refreshBtn = document.getElementById('refreshBtn');
 
     // Build thumbnail strip using poster images
-    function buildThumbs(container, items, type) {
+    function buildThumbs(container, items, type, onSelect) {
       container.innerHTML = '';
 
       for (let i = 0; i < items.length; i++) {
@@ -693,7 +771,9 @@
 
         div.appendChild(img);
         div.addEventListener('click', () => {
-          if (type === 'hook') {
+          if (onSelect) {
+            onSelect(i);
+          } else if (type === 'hook') {
             currentHookIndex = i;
             showCurrentHook();
           } else {
@@ -757,6 +837,43 @@
       showCurrentCapture();
     }
 
+    // Bulk
+    function showCurrentBulkHook() {
+      if (hooks.length === 0) return;
+      if (currentBulkHookIndex >= hooks.length) currentBulkHookIndex = 0;
+      if (currentBulkHookIndex < 0) currentBulkHookIndex = hooks.length - 1;
+      const item = hooks[currentBulkHookIndex];
+      const posterSrc = item.posterUrl || `/api/poster?type=hook&filename=${encodeURIComponent(item.name)}`;
+      bulkHookPreviewVideo.poster = posterSrc;
+      bulkHookPreviewVideo.src = item.url;
+      bulkHookPreviewVideo.play().catch(() => {});
+      highlightThumb(bulkHookThumbs, currentBulkHookIndex);
+    }
+
+    function showCurrentBulkCapture() {
+      if (captures.length === 0) return;
+      if (currentBulkCaptureIndex >= captures.length) currentBulkCaptureIndex = 0;
+      if (currentBulkCaptureIndex < 0) currentBulkCaptureIndex = captures.length - 1;
+      const item = captures[currentBulkCaptureIndex];
+      const posterSrc = item.posterUrl || `/api/poster?type=capture&filename=${encodeURIComponent(item.name)}`;
+      bulkCapturePreviewVideo.poster = posterSrc;
+      bulkCapturePreviewVideo.src = item.url;
+      bulkCapturePreviewVideo.play().catch(() => {});
+      highlightThumb(bulkCaptureThumbs, currentBulkCaptureIndex);
+    }
+
+    function navigateBulkHook(dir) {
+      if (hooks.length === 0) return;
+      currentBulkHookIndex = (currentBulkHookIndex + dir + hooks.length) % hooks.length;
+      showCurrentBulkHook();
+    }
+
+    function navigateBulkCapture(dir) {
+      if (captures.length === 0) return;
+      currentBulkCaptureIndex = (currentBulkCaptureIndex + dir + captures.length) % captures.length;
+      showCurrentBulkCapture();
+    }
+
     async function deleteFile(type) {
       const items = type === 'hook' ? hooks : captures;
       const index = type === 'hook' ? currentHookIndex : currentCaptureIndex;
@@ -791,10 +908,14 @@
 
         currentHookIndex = 0;
         currentCaptureIndex = 0;
+        currentBulkHookIndex = 0;
+        currentBulkCaptureIndex = 0;
 
         // Build thumbnails (non-blocking, frames load in background)
         buildThumbs(hookThumbs, hooks, 'hook');
         buildThumbs(captureThumbs, captures, 'capture');
+        buildThumbs(bulkHookThumbs, hooks, 'hook', (i) => { currentBulkHookIndex = i; showCurrentBulkHook(); });
+        buildThumbs(bulkCaptureThumbs, captures, 'capture', (i) => { currentBulkCaptureIndex = i; showCurrentBulkCapture(); });
 
         // Show app immediately, don't wait for videos
         loading.classList.add('hidden');
@@ -803,6 +924,8 @@
         // Start main previews in background
         showCurrentHook();
         showCurrentCapture();
+        showCurrentBulkHook();
+        showCurrentBulkCapture();
       } catch (err) {
         loading.textContent = 'Erreur: ' + err.message;
       }
@@ -820,16 +943,27 @@
       document.querySelectorAll('.nav-tab').forEach(t => {
         t.classList.toggle('active', t.dataset.page === page);
       });
+      pageMain.classList.remove('active');
+      pageImport.classList.remove('active');
+      pageBulk.classList.remove('active');
+
       if (page === 'main') {
         pageMain.classList.add('active');
-        pageImport.classList.remove('active');
         footerMenu.style.display = '';
+        bulkHookPreviewVideo.pause();
+        bulkCapturePreviewVideo.pause();
+      } else if (page === 'bulk') {
+        pageBulk.classList.add('active');
+        footerMenu.style.display = 'none';
+        hookPreviewVideo.pause();
+        capturePreviewVideo.pause();
       } else {
-        pageMain.classList.remove('active');
         pageImport.classList.add('active');
         footerMenu.style.display = 'none';
         hookPreviewVideo.pause();
         capturePreviewVideo.pause();
+        bulkHookPreviewVideo.pause();
+        bulkCapturePreviewVideo.pause();
       }
     }
 
