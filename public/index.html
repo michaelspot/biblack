@@ -192,6 +192,7 @@
     }
 
     .thumb-item {
+      position: relative;
       width: 45px;
       height: 80px;
       border-radius: 6px;
@@ -265,6 +266,51 @@
       text-align: center;
       color: #444;
       font-size: 13px;
+    }
+
+    .thumb-check {
+      position: absolute;
+      top: 3px;
+      right: 3px;
+      width: 16px;
+      height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: #000;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .bulk-list {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      padding: 4px 0;
+    }
+
+    .bulk-list::-webkit-scrollbar {
+      display: none;
+    }
+
+    .bulk-list-item {
+      position: relative;
+      padding: 10px 14px;
+      padding-right: 28px;
+      background: #222;
+      border-radius: 8px;
+      cursor: pointer;
+      flex-shrink: 0;
+      font-size: 12px;
+      color: #aaa;
+      transition: background 0.2s;
+      white-space: nowrap;
     }
 
     .btn-delete {
@@ -652,12 +698,12 @@
 
         <div class="section">
           <div class="section-title">Musique</div>
-          <div class="section-empty">Bientôt disponible</div>
+          <div class="bulk-list" id="bulkMusiqueThumbs"></div>
         </div>
 
         <div class="section">
           <div class="section-title">Texte</div>
-          <div class="section-empty">Bientôt disponible</div>
+          <div class="bulk-list" id="bulkTexteThumbs"></div>
         </div>
       </div>
 
@@ -710,10 +756,13 @@
   <script>
     let hooks = [];
     let captures = [];
+    let musiques = [];
+    let textes = [];
     let currentHookIndex = 0;
     let currentCaptureIndex = 0;
     let currentBulkHookIndex = 0;
     let currentBulkCaptureIndex = 0;
+    let bulkSelected = { hooks: new Set(), captures: new Set(), musiques: new Set(), textes: new Set() };
     let countdownInterval = null;
     let progressInterval = null;
     let isGenerating = false;
@@ -845,7 +894,8 @@
       bulkHookPreviewVideo.poster = posterSrc;
       bulkHookPreviewVideo.src = item.url;
       bulkHookPreviewVideo.play().catch(() => {});
-      highlightThumb(bulkHookThumbs, currentBulkHookIndex);
+      const thumbEl = bulkHookThumbs.children[currentBulkHookIndex];
+      if (thumbEl) thumbEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
 
     function showCurrentBulkCapture() {
@@ -857,7 +907,8 @@
       bulkCapturePreviewVideo.poster = posterSrc;
       bulkCapturePreviewVideo.src = item.url;
       bulkCapturePreviewVideo.play().catch(() => {});
-      highlightThumb(bulkCaptureThumbs, currentBulkCaptureIndex);
+      const thumbEl = bulkCaptureThumbs.children[currentBulkCaptureIndex];
+      if (thumbEl) thumbEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
 
     function navigateBulkHook(dir) {
@@ -870,6 +921,71 @@
       if (captures.length === 0) return;
       currentBulkCaptureIndex = (currentBulkCaptureIndex + dir + captures.length) % captures.length;
       showCurrentBulkCapture();
+    }
+
+    function buildBulkThumbs(container, items, type, selectedSet, onClickItem) {
+      container.innerHTML = '';
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const div = document.createElement('div');
+        div.className = 'thumb-item';
+        div.dataset.index = i;
+
+        const img = document.createElement('img');
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+        img.loading = 'eager';
+        const posterSrc = item.posterUrl || `/api/poster?type=${type}&filename=${encodeURIComponent(item.name)}`;
+        img.src = posterSrc;
+        div.appendChild(img);
+
+        const check = document.createElement('div');
+        check.className = 'thumb-check';
+        check.textContent = '✓';
+        div.appendChild(check);
+
+        div.addEventListener('click', () => {
+          if (selectedSet.has(i)) {
+            selectedSet.delete(i);
+          } else {
+            selectedSet.add(i);
+          }
+          check.style.display = selectedSet.has(i) ? 'flex' : 'none';
+          if (onClickItem) onClickItem(i);
+        });
+
+        container.appendChild(div);
+      }
+    }
+
+    function buildBulkList(container, items, selectedSet, labelFn) {
+      container.innerHTML = '';
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const div = document.createElement('div');
+        div.className = 'bulk-list-item';
+
+        const label = document.createElement('span');
+        label.textContent = labelFn ? labelFn(item) : item;
+        div.appendChild(label);
+
+        const check = document.createElement('div');
+        check.className = 'thumb-check';
+        check.textContent = '✓';
+        div.appendChild(check);
+
+        div.addEventListener('click', () => {
+          if (selectedSet.has(i)) {
+            selectedSet.delete(i);
+          } else {
+            selectedSet.add(i);
+          }
+          check.style.display = selectedSet.has(i) ? 'flex' : 'none';
+        });
+
+        container.appendChild(div);
+      }
     }
 
     async function deleteFile(type) {
@@ -903,17 +1019,24 @@
 
         hooks = data.hooks;
         captures = data.captures;
+        musiques = data.musiques || [];
+        textes = data.textes || [];
 
         currentHookIndex = 0;
         currentCaptureIndex = 0;
         currentBulkHookIndex = 0;
         currentBulkCaptureIndex = 0;
+        bulkSelected = { hooks: new Set(), captures: new Set(), musiques: new Set(), textes: new Set() };
 
         // Build thumbnails (non-blocking, frames load in background)
         buildThumbs(hookThumbs, hooks, 'hook');
         buildThumbs(captureThumbs, captures, 'capture');
-        buildThumbs(bulkHookThumbs, hooks, 'hook', (i) => { currentBulkHookIndex = i; showCurrentBulkHook(); });
-        buildThumbs(bulkCaptureThumbs, captures, 'capture', (i) => { currentBulkCaptureIndex = i; showCurrentBulkCapture(); });
+
+        // Build bulk multi-select thumbs
+        buildBulkThumbs(bulkHookThumbs, hooks, 'hook', bulkSelected.hooks, (i) => { currentBulkHookIndex = i; showCurrentBulkHook(); });
+        buildBulkThumbs(bulkCaptureThumbs, captures, 'capture', bulkSelected.captures, (i) => { currentBulkCaptureIndex = i; showCurrentBulkCapture(); });
+        buildBulkList(document.getElementById('bulkMusiqueThumbs'), musiques, bulkSelected.musiques, (m) => m.name.replace(/\.[^/.]+$/, ''));
+        buildBulkList(document.getElementById('bulkTexteThumbs'), textes, bulkSelected.textes, (t) => typeof t === 'string' ? t : (t.text || t.name || JSON.stringify(t)));
 
         // Show app immediately, don't wait for videos
         loading.classList.add('hidden');
