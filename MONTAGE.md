@@ -16,17 +16,17 @@ Endpoint : `/api/bulk-merge`
 Le filtre `drawtext` de FFmpeg n'est pas disponible dans le binaire `ffmpeg-static` sur Vercel. On utilise `@napi-rs/canvas` pour générer un PNG transparent :
 
 ```
-Font Anton (base64 JS module) → GlobalFonts.register() → Canvas 2D → PNG → FFmpeg overlay filter
+Font TikTok Sans Bold (base64 JS module) → GlobalFonts.register() → Canvas 2D → PNG → FFmpeg overlay filter
 ```
 
 **Pourquoi @napi-rs/canvas :** sharp+SVG ne gère pas bien les fonts embarquées (carrés à la place du texte). `@napi-rs/canvas` utilise un vrai moteur de rendu texte avec `registerFont()`, `strokeText()` et `fillText()`.
 
-**Pourquoi embarquer la font :** Les polices système ne sont pas disponibles sur Vercel serverless. La font Anton est stockée en base64 dans `api/font-anton.js` et enregistrée via `GlobalFonts.register()` au démarrage du module.
+**Pourquoi embarquer la font :** Les polices système ne sont pas disponibles sur Vercel serverless. La font TikTok Sans Bold est stockée en base64 dans `api/font-tiktok.js` et enregistrée via `GlobalFonts.register()` au démarrage du module.
 
-**Emojis :** Les emojis sont automatiquement retirés du texte avant le rendu (la font Anton ne les supporte pas). Regex : `[\p{Emoji_Presentation}\p{Extended_Pictographic}]`.
+**Emojis :** Les emojis sont automatiquement retirés du texte avant le rendu (la font ne les supporte pas). Regex : `[\p{Emoji_Presentation}\p{Extended_Pictographic}]`.
 
-#### Style actuel (TikTok-like)
-- **Font** : Anton (Google Fonts, base64 dans `api/font-anton.js`, enregistrée via `GlobalFonts.register()`)
+#### Style actuel (TikTok)
+- **Font** : TikTok Sans Bold (base64 dans `api/font-tiktok.js`, enregistrée via `GlobalFonts.register()`)
 - **Taille** : `75px`
 - **Couleur fill** : `white`
 - **Stroke** : `black`, `lineWidth: 8`, `lineJoin: round`

@@ -6,10 +6,10 @@ import { createCanvas, GlobalFonts } from "@napi-rs/canvas";
 import fs from "fs";
 import https from "https";
 import path from "path";
-import ANTON_BASE64 from "./font-anton.js";
+import TIKTOK_BASE64 from "./font-tiktok.js";
 
-// Enregistrer la font Anton au démarrage
-GlobalFonts.register(Buffer.from(ANTON_BASE64, 'base64'), 'Anton');
+// Enregistrer la font TikTok Sans Bold au démarrage
+GlobalFonts.register(Buffer.from(TIKTOK_BASE64, 'base64'), 'TikTokSans');
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath.path);
@@ -73,7 +73,7 @@ function createTextOverlay(text, outputPath) {
   const totalHeight = lines.length * lineHeight;
   const startY = 960 - totalHeight / 2 + lineHeight / 2;
 
-  ctx.font = '75px Anton';
+  ctx.font = 'bold 75px TikTokSans';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
