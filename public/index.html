@@ -19,6 +19,7 @@
   <link rel="icon" type="image/png" href="/icon.png">
   <link rel="manifest" href="/manifest.json">
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/jszip@3/dist/jszip.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -1484,15 +1485,17 @@
       resetUI();
       result.innerHTML = '';
       setBulkButtonsDisabled(true);
-      showStatus(`0/${combinations.length}`);
+      showStatus(`Génération 0/${combinations.length}`);
       progressBar.style.width = '0%';
 
+      const generatedVideos = [];
       let completed = 0;
       let errors = 0;
 
+      // 1. Générer toutes les vidéos
       for (const combo of combinations) {
-        statusText.textContent = `${completed + 1}/${combinations.length}`;
-        progressBar.style.width = `${(completed / combinations.length) * 100}%`;
+        statusText.textContent = `Génération ${completed + 1}/${combinations.length}`;
+        progressBar.style.width = `${(completed / combinations.length) * 90}%`;
 
         try {
           let url = `/api/bulk-merge?hook=${encodeURIComponent(combo.hook.name)}&capture=${encodeURIComponent(combo.capture.name)}`;
@@ -1506,8 +1509,8 @@
           const data = await res.json();
           if (!res.ok) throw new Error(data.error);
 
-          const name = combo.hook.name.replace(/\.[^/.]+$/, '') + ' + ' + combo.capture.name.replace(/\.[^/.]+$/, '');
-          showResult(data.url, name);
+          const name = combo.hook.name.replace(/\.[^/.]+$/, '') + '_' + combo.capture.name.replace(/\.[^/.]+$/, '');
+          generatedVideos.push({ url: data.url, name });
         } catch (err) {
           errors++;
           console.error('Bulk merge error:', err);
@@ -1515,11 +1518,66 @@
         completed++;
       }
 
+      if (generatedVideos.length === 0) {
+        showError('Aucune vidéo générée.');
+        setBulkButtonsDisabled(false);
+        setBulkButtonsText('Bulk Générer');
+        return;
+      }
+
+      // 2. Télécharger et créer le ZIP
+      statusText.textContent = `Préparation du ZIP...`;
+      progressBar.style.width = '92%';
+
+      const zip = new JSZip();
+      for (let i = 0; i < generatedVideos.length; i++) {
+        statusText.textContent = `Téléchargement ${i + 1}/${generatedVideos.length}`;
+        try {
+          const proxyUrl = `/api/proxy?url=${encodeURIComponent(generatedVideos[i].url)}`;
+          const resp = await fetch(proxyUrl);
+          const blob = await resp.blob();
+          zip.file(`${generatedVideos[i].name}.mp4`, blob);
+        } catch (err) {
+          console.error('Download error:', err);
+        }
+      }
+
+      statusText.textContent = `Compression...`;
+      progressBar.style.width = '96%';
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+
       progressBar.style.width = '100%';
-      statusText.textContent = `Terminé : ${completed - errors}/${combinations.length}`;
-      setTimeout(() => { status.classList.remove('visible'); }, 2000);
+
+      // 3. Télécharger / Partager le ZIP
+      if (isIOS && navigator.canShare) {
+        const file = new File([zipBlob], 'biblack-bulk.zip', { type: 'application/zip' });
+        if (navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title: 'Biblack Bulk' });
+          } catch (e) {
+            if (e.name !== 'AbortError') downloadBlob(zipBlob, 'biblack-bulk.zip');
+          }
+        } else {
+          downloadBlob(zipBlob, 'biblack-bulk.zip');
+        }
+      } else {
+        downloadBlob(zipBlob, 'biblack-bulk.zip');
+      }
+
+      status.classList.remove('visible');
       setBulkButtonsDisabled(false);
       setBulkButtonsText('Bulk Générer');
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
 
     // Init
