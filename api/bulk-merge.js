@@ -6,6 +6,9 @@ import sharp from "sharp";
 import fs from "fs";
 import https from "https";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath.path);
@@ -48,7 +51,7 @@ function escapeXml(text) {
     .replace(/'/g, '&apos;');
 }
 
-function wrapText(text, maxChars = 25) {
+function wrapText(text, maxChars = 20) {
   const words = text.split(' ');
   const lines = [];
   let currentLine = '';
@@ -64,11 +67,22 @@ function wrapText(text, maxChars = 25) {
   return lines;
 }
 
+// Cache la font en base64 au premier appel
+let fontBase64Cache = null;
+function getFontBase64() {
+  if (!fontBase64Cache) {
+    const fontPath = path.join(__dirname, '..', 'fonts', 'Anton-Regular.ttf');
+    fontBase64Cache = fs.readFileSync(fontPath).toString('base64');
+  }
+  return fontBase64Cache;
+}
+
 async function createTextOverlay(text, outputPath) {
-  const lines = wrapText(text, 25);
-  const lineHeight = 72;
+  const fontBase64 = getFontBase64();
+  const lines = wrapText(text, 20);
+  const lineHeight = 90;
   const totalHeight = lines.length * lineHeight;
-  const startY = 960 - totalHeight / 2 + 50;
+  const startY = 960 - totalHeight / 2 + 55;
 
   const tspans = lines.map((line, i) => {
     const y = startY + i * lineHeight;
@@ -76,8 +90,18 @@ async function createTextOverlay(text, outputPath) {
   }).join('');
 
   const svg = `<svg width="1080" height="1920" xmlns="http://www.w3.org/2000/svg">
-    <text text-anchor="middle" font-size="60" font-weight="700" font-family="sans-serif"
-      fill="white" stroke="black" stroke-width="4" paint-order="stroke">
+    <defs>
+      <style>
+        @font-face {
+          font-family: 'Anton';
+          src: url('data:font/truetype;base64,${fontBase64}');
+        }
+      </style>
+    </defs>
+    <text text-anchor="middle" font-size="75" font-weight="900"
+      font-family="Anton, Impact, sans-serif" fill="white"
+      stroke="black" stroke-width="7" paint-order="stroke"
+      stroke-linejoin="round">
       ${tspans}
     </text>
   </svg>`;
