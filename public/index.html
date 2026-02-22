@@ -149,6 +149,39 @@
       margin-bottom: 10px;
     }
 
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .section-header .section-title {
+      margin-bottom: 0;
+    }
+
+    .btn-select-all {
+      background: none;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #666;
+      font-size: 11px;
+      padding: 4px 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-select-all:hover {
+      border-color: #555;
+      color: #fff;
+    }
+
+    .btn-select-all.all-selected {
+      background: #fff;
+      color: #000;
+      border-color: #fff;
+    }
+
     /* Thumbnail strip */
     .thumb-strip {
       display: flex;
@@ -667,7 +700,10 @@
       <!-- Page Bulk -->
       <div id="pageBulk" class="page">
         <div class="section">
-          <div class="section-title">Hook</div>
+          <div class="section-header">
+            <div class="section-title">Hook</div>
+            <button class="btn-select-all" onclick="toggleSelectAll('hooks', bulkHookThumbs, hooks)">Tout sélectionner</button>
+          </div>
           <div class="thumb-strip">
             <button class="thumb-arrow" onclick="navigateBulkHook(-1)">‹</button>
             <div class="thumb-scroll" id="bulkHookThumbs"></div>
@@ -682,7 +718,10 @@
         </div>
 
         <div class="section">
-          <div class="section-title">Capture</div>
+          <div class="section-header">
+            <div class="section-title">Capture</div>
+            <button class="btn-select-all" onclick="toggleSelectAll('captures', bulkCaptureThumbs, captures)">Tout sélectionner</button>
+          </div>
           <div class="thumb-strip">
             <button class="thumb-arrow" onclick="navigateBulkCapture(-1)">‹</button>
             <div class="thumb-scroll" id="bulkCaptureThumbs"></div>
@@ -697,12 +736,18 @@
         </div>
 
         <div class="section">
-          <div class="section-title">Musique</div>
+          <div class="section-header">
+            <div class="section-title">Musique</div>
+            <button class="btn-select-all" onclick="toggleSelectAll('musiques', document.getElementById('bulkMusiqueThumbs'), musiques)">Tout sélectionner</button>
+          </div>
           <div class="bulk-list" id="bulkMusiqueThumbs"></div>
         </div>
 
         <div class="section">
-          <div class="section-title">Texte</div>
+          <div class="section-header">
+            <div class="section-title">Texte</div>
+            <button class="btn-select-all" onclick="toggleSelectAll('textes', document.getElementById('bulkTexteThumbs'), textes)">Tout sélectionner</button>
+          </div>
           <div class="bulk-list" id="bulkTexteThumbs"></div>
         </div>
       </div>
@@ -921,6 +966,23 @@
       if (captures.length === 0) return;
       currentBulkCaptureIndex = (currentBulkCaptureIndex + dir + captures.length) % captures.length;
       showCurrentBulkCapture();
+    }
+
+    function toggleSelectAll(key, container, items) {
+      const selectedSet = bulkSelected[key];
+      const allSelected = selectedSet.size === items.length;
+      selectedSet.clear();
+      if (!allSelected) {
+        for (let i = 0; i < items.length; i++) selectedSet.add(i);
+      }
+      // Update all checkmarks in container
+      container.querySelectorAll('.thumb-check').forEach((check, i) => {
+        check.style.display = selectedSet.has(i) ? 'flex' : 'none';
+      });
+      // Update button state
+      const btn = event.currentTarget;
+      btn.classList.toggle('all-selected', !allSelected);
+      btn.textContent = !allSelected ? 'Tout désélectionner' : 'Tout sélectionner';
     }
 
     function buildBulkThumbs(container, items, type, selectedSet, onClickItem) {
