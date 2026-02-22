@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/bulk-merge.js": {
+      "includeFiles": "fonts/**"
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",

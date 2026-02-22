@@ -1520,8 +1520,11 @@
           }
 
           const res = await fetch(url);
+          if (!res.ok) {
+            const text = await res.text();
+            try { throw new Error(JSON.parse(text).error); } catch { throw new Error(`Erreur serveur (${res.status})`); }
+          }
           const data = await res.json();
-          if (!res.ok) throw new Error(data.error);
 
           const name = combo.hook.name.replace(/\.[^/.]+$/, '') + '_' + combo.capture.name.replace(/\.[^/.]+$/, '');
           generatedVideos.push({ url: data.url, name });
