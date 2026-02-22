@@ -6,9 +6,7 @@ import sharp from "sharp";
 import fs from "fs";
 import https from "https";
 import path from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import ANTON_BASE64 from "./font-anton.js";
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath.path);
@@ -67,18 +65,7 @@ function wrapText(text, maxChars = 20) {
   return lines;
 }
 
-// Cache la font en base64 au premier appel
-let fontBase64Cache = null;
-function getFontBase64() {
-  if (!fontBase64Cache) {
-    const fontPath = path.join(__dirname, '..', 'fonts', 'Anton-Regular.ttf');
-    fontBase64Cache = fs.readFileSync(fontPath).toString('base64');
-  }
-  return fontBase64Cache;
-}
-
 async function createTextOverlay(text, outputPath) {
-  const fontBase64 = getFontBase64();
   const lines = wrapText(text, 20);
   const lineHeight = 90;
   const totalHeight = lines.length * lineHeight;
@@ -94,7 +81,7 @@ async function createTextOverlay(text, outputPath) {
       <style>
         @font-face {
           font-family: 'Anton';
-          src: url('data:font/truetype;base64,${fontBase64}');
+          src: url('data:font/truetype;base64,${ANTON_BASE64}');
         }
       </style>
     </defs>
