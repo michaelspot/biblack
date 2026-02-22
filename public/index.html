@@ -1457,6 +1457,10 @@
       bulkBtns.forEach(btn => { if (btn) btn.textContent = text || 'Bulk Générer'; });
     }
 
+    function pickRandom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
     async function bulkGenerate() {
       const selHooks = [...bulkSelected.hooks].map(i => hooks[i]);
       const selCaptures = [...bulkSelected.captures].map(i => captures[i]);
@@ -1468,19 +1472,29 @@
         return;
       }
 
-      // Toutes les combinaisons
-      const combinations = [];
-      const mList = selMusiques.length > 0 ? selMusiques : [null];
-      const tList = selTextes.length > 0 ? selTextes : [null];
+      // Demander combien de vidéos
+      const maxPossible = selHooks.length * selCaptures.length;
+      const input = prompt(`Combien de vidéos ? (max ${maxPossible})`, maxPossible);
+      if (input === null) return;
+      const count = Math.max(1, Math.min(parseInt(input) || 1, maxPossible));
+
+      // Générer les combinaisons aléatoires sans doublon hook+capture
+      const allPairs = [];
       for (const h of selHooks) {
         for (const c of selCaptures) {
-          for (const m of mList) {
-            for (const t of tList) {
-              combinations.push({ hook: h, capture: c, musique: m, texte: t });
-            }
-          }
+          allPairs.push({ hook: h, capture: c });
         }
       }
+      // Mélanger (Fisher-Yates)
+      for (let i = allPairs.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [allPairs[i], allPairs[j]] = [allPairs[j], allPairs[i]];
+      }
+      const combinations = allPairs.slice(0, count).map(pair => ({
+        ...pair,
+        musique: selMusiques.length > 0 ? pickRandom(selMusiques) : null,
+        texte: selTextes.length > 0 ? pickRandom(selTextes) : null,
+      }));
 
       resetUI();
       result.innerHTML = '';
