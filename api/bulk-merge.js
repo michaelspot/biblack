@@ -2,6 +2,7 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
 import ffprobePath from "ffprobe-static";
+import sharp from "sharp";
 import fs from "fs";
 import https from "https";
 import path from "path";
@@ -38,6 +39,52 @@ function downloadFile(url, destPath) {
   });
 }
 
+function escapeXml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function wrapText(text, maxChars = 25) {
+  const words = text.split(' ');
+  const lines = [];
+  let currentLine = '';
+  for (const word of words) {
+    if ((currentLine + ' ' + word).trim().length > maxChars && currentLine) {
+      lines.push(currentLine.trim());
+      currentLine = word;
+    } else {
+      currentLine += ' ' + word;
+    }
+  }
+  if (currentLine.trim()) lines.push(currentLine.trim());
+  return lines;
+}
+
+async function createTextOverlay(text, outputPath) {
+  const lines = wrapText(text, 25);
+  const lineHeight = 72;
+  const totalHeight = lines.length * lineHeight;
+  const startY = 960 - totalHeight / 2 + 50;
+
+  const tspans = lines.map((line, i) => {
+    const y = startY + i * lineHeight;
+    return `<tspan x="540" y="${y}">${escapeXml(line)}</tspan>`;
+  }).join('');
+
+  const svg = `<svg width="1080" height="1920" xmlns="http://www.w3.org/2000/svg">
+    <text text-anchor="middle" font-size="60" font-weight="700" font-family="sans-serif"
+      fill="white" stroke="black" stroke-width="4" paint-order="stroke">
+      ${tspans}
+    </text>
+  </svg>`;
+
+  await sharp(Buffer.from(svg)).png().toFile(outputPath);
+}
+
 export default async function handler(req, res) {
   const { hook, capture, musique, texte } = req.query;
 
@@ -49,27 +96,25 @@ export default async function handler(req, res) {
   const hookPath = `/tmp/hook-${timestamp}${path.extname(hook)}`;
   const capturePath = `/tmp/capture-${timestamp}${path.extname(capture)}`;
   const musiquePath = musique ? `/tmp/musique-${timestamp}${path.extname(musique)}` : null;
-  const textFilePath = texte ? `/tmp/text-${timestamp}.txt` : null;
+  const overlayPath = texte ? `/tmp/overlay-${timestamp}.png` : null;
   const outputPath = `/tmp/output-${timestamp}.mp4`;
   const tempFiles = [hookPath, capturePath, outputPath];
   if (musiquePath) tempFiles.push(musiquePath);
-  if (textFilePath) tempFiles.push(textFilePath);
+  if (overlayPath) tempFiles.push(overlayPath);
 
   try {
-    // Télécharge les fichiers en parallèle
-    const downloads = [
+    // Télécharge les fichiers en parallèle + génère le text overlay
+    const tasks = [
       downloadFile(`${publicBaseUrl}/hooks/${hook}`, hookPath),
       downloadFile(`${publicBaseUrl}/captures/${capture}`, capturePath),
     ];
     if (musique) {
-      downloads.push(downloadFile(`${publicBaseUrl}/musique/${musique}`, musiquePath));
+      tasks.push(downloadFile(`${publicBaseUrl}/musique/${musique}`, musiquePath));
     }
-    await Promise.all(downloads);
-
-    // Écrit le texte dans un fichier pour éviter les problèmes d'échappement
     if (texte) {
-      fs.writeFileSync(textFilePath, texte);
+      tasks.push(createTextOverlay(texte, overlayPath));
     }
+    await Promise.all(tasks);
 
     // Construit le filtre FFmpeg
     const filterParts = [
@@ -80,9 +125,12 @@ export default async function handler(req, res) {
 
     let finalVideoLabel = "concatv";
 
+    // Overlay du texte en PNG transparent
     if (texte) {
+      // L'index de l'input overlay dépend de si la musique est présente
+      const overlayIdx = musiquePath ? 3 : 2;
       filterParts.push(
-        `[concatv]drawtext=textfile='${textFilePath}':fontsize=60:fontcolor=white:borderw=3:bordercolor=black:x=(w-tw)/2:y=(h-th)/2[outv]`
+        `[concatv][${overlayIdx}:v]overlay=0:0[outv]`
       );
       finalVideoLabel = "outv";
     }
@@ -96,14 +144,17 @@ export default async function handler(req, res) {
       "-threads", "0",
     ];
 
+    // Audio : musique ou silence
     if (musiquePath) {
-      outputOptions.push("-map", "2:a", "-c:a", "aac", "-b:a", "128k", "-shortest");
+      const audioIdx = 2;
+      outputOptions.push("-map", `${audioIdx}:a`, "-c:a", "aac", "-b:a", "128k", "-shortest");
     } else {
       outputOptions.push("-an");
     }
 
     const cmd = ffmpeg().input(hookPath).input(capturePath);
     if (musiquePath) cmd.input(musiquePath);
+    if (overlayPath) cmd.input(overlayPath);
 
     await new Promise((resolve, reject) => {
       cmd
