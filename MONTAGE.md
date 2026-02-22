@@ -11,60 +11,41 @@ Endpoint : `/api/bulk-merge`
 3. **Text overlay** : Un PNG transparent 1080x1920 est généré via `sharp` et composité sur la vidéo avec le filtre `overlay`.
 4. **Audio** : Si une musique est sélectionnée, elle est ajoutée comme piste audio (`-shortest` pour couper à la durée de la vidéo).
 
-### Overlay texte (sharp + SVG + font embarquée)
+### Overlay texte (@napi-rs/canvas + font embarquée)
 
-Le filtre `drawtext` de FFmpeg n'est pas disponible dans le binaire `ffmpeg-static` sur Vercel. On utilise donc `sharp` pour générer un PNG transparent :
+Le filtre `drawtext` de FFmpeg n'est pas disponible dans le binaire `ffmpeg-static` sur Vercel. On utilise `@napi-rs/canvas` pour générer un PNG transparent :
 
 ```
-Font Anton (base64) → SVG (1080x1920) → sharp → PNG transparent → FFmpeg overlay filter
+Font Anton (base64 JS module) → GlobalFonts.register() → Canvas 2D → PNG → FFmpeg overlay filter
 ```
 
-**Pourquoi embarquer la font :** Les polices système ne sont pas disponibles sur Vercel serverless. La font Anton est lue depuis `fonts/Anton-Regular.ttf`, convertie en base64, et injectée dans le SVG via `@font-face` data URI. Le résultat est caché en mémoire après le premier appel.
+**Pourquoi @napi-rs/canvas :** sharp+SVG ne gère pas bien les fonts embarquées (carrés à la place du texte). `@napi-rs/canvas` utilise un vrai moteur de rendu texte avec `registerFont()`, `strokeText()` et `fillText()`.
+
+**Pourquoi embarquer la font :** Les polices système ne sont pas disponibles sur Vercel serverless. La font Anton est stockée en base64 dans `api/font-anton.js` et enregistrée via `GlobalFonts.register()` au démarrage du module.
+
+**Emojis :** Les emojis sont automatiquement retirés du texte avant le rendu (la font Anton ne les supporte pas). Regex : `[\p{Emoji_Presentation}\p{Extended_Pictographic}]`.
 
 #### Style actuel (TikTok-like)
-- **Font** : Anton (Google Fonts, embarquée en base64 dans le SVG via `@font-face`)
-- **Fallbacks** : `Impact, sans-serif`
-- **Taille** : `font-size: 75px`
-- **Poids** : `font-weight: 900` (extra bold)
-- **Couleur** : Blanc (`fill="white"`)
-- **Bordure** : Noir, épaisseur 7px (`stroke="black"`, `stroke-width="7"`)
-- **paint-order** : `stroke` (le stroke est dessiné derrière le fill)
-- **stroke-linejoin** : `round` (coins arrondis sur le contour, rendu plus propre)
+- **Font** : Anton (Google Fonts, base64 dans `api/font-anton.js`, enregistrée via `GlobalFonts.register()`)
+- **Taille** : `75px`
+- **Couleur fill** : `white`
+- **Stroke** : `black`, `lineWidth: 8`, `lineJoin: round`
+- **Rendu** : `strokeText()` d'abord (bordure derrière), puis `fillText()` (blanc devant)
+- **textAlign** : `center`
+- **textBaseline** : `middle`
 - **Line height** : 90px entre chaque ligne
 - **Word wrap** : Automatique à 20 caractères max par ligne
 - **Canvas** : 1080x1920 (plein écran TikTok)
 
 #### Positionnement
-- **Horizontal** : Centré (`text-anchor="middle"`, `x=540`)
+- **Horizontal** : Centré (`textAlign = 'center'`, `x = 540`)
 - **Vertical** : Centré sur l'écran, formule :
 ```
-startY = 960 - (totalHeight / 2) + 55
+startY = 960 - (totalHeight / 2) + lineHeight / 2
 ```
 - `960` = milieu vertical du canvas 1920px
 - `totalHeight` = nombre de lignes × 90px
-- `+55` = ajustement pour la baseline du texte
-
-#### SVG généré (exemple)
-```xml
-<svg width="1080" height="1920" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <style>
-      @font-face {
-        font-family: 'Anton';
-        src: url('data:font/truetype;base64,...');
-      }
-    </style>
-  </defs>
-  <text text-anchor="middle" font-size="75" font-weight="900"
-    font-family="Anton, Impact, sans-serif" fill="white"
-    stroke="black" stroke-width="7" paint-order="stroke"
-    stroke-linejoin="round">
-    <tspan x="540" y="915">Donc PERSONNE m'a</tspan>
-    <tspan x="540" y="1005">dit qu'on pouvait</tspan>
-    <tspan x="540" y="1095">étudier la BIBLE 😳</tspan>
-  </text>
-</svg>
-```
+- `+ lineHeight / 2` = ajustement car `textBaseline = 'middle'`
 
 ## Pipeline de génération (Montage simple)
 

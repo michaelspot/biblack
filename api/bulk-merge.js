@@ -2,11 +2,14 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
 import ffprobePath from "ffprobe-static";
-import sharp from "sharp";
+import { createCanvas, GlobalFonts } from "@napi-rs/canvas";
 import fs from "fs";
 import https from "https";
 import path from "path";
 import ANTON_BASE64 from "./font-anton.js";
+
+// Enregistrer la font Anton au démarrage
+GlobalFonts.register(Buffer.from(ANTON_BASE64, 'base64'), 'Anton');
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath.path);
@@ -40,13 +43,8 @@ function downloadFile(url, destPath) {
   });
 }
 
-function escapeXml(text) {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
+function stripEmojis(text) {
+  return text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').replace(/\s+/g, ' ').trim();
 }
 
 function wrapText(text, maxChars = 20) {
@@ -65,35 +63,36 @@ function wrapText(text, maxChars = 20) {
   return lines;
 }
 
-async function createTextOverlay(text, outputPath) {
-  const lines = wrapText(text, 20);
+function createTextOverlay(text, outputPath) {
+  const cleanText = stripEmojis(text);
+  const canvas = createCanvas(1080, 1920);
+  const ctx = canvas.getContext('2d');
+
+  const lines = wrapText(cleanText, 20);
   const lineHeight = 90;
   const totalHeight = lines.length * lineHeight;
-  const startY = 960 - totalHeight / 2 + 55;
+  const startY = 960 - totalHeight / 2 + lineHeight / 2;
 
-  const tspans = lines.map((line, i) => {
-    const y = startY + i * lineHeight;
-    return `<tspan x="540" y="${y}">${escapeXml(line)}</tspan>`;
-  }).join('');
+  ctx.font = '75px Anton';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
 
-  const svg = `<svg width="1080" height="1920" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <style>
-        @font-face {
-          font-family: 'Anton';
-          src: url('data:font/truetype;base64,${ANTON_BASE64}');
-        }
-      </style>
-    </defs>
-    <text text-anchor="middle" font-size="75" font-weight="900"
-      font-family="Anton, Impact, sans-serif" fill="white"
-      stroke="black" stroke-width="7" paint-order="stroke"
-      stroke-linejoin="round">
-      ${tspans}
-    </text>
-  </svg>`;
+  // Stroke noir (bordure épaisse)
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 8;
+  ctx.lineJoin = 'round';
+  for (let i = 0; i < lines.length; i++) {
+    ctx.strokeText(lines[i], 540, startY + i * lineHeight);
+  }
 
-  await sharp(Buffer.from(svg)).png().toFile(outputPath);
+  // Fill blanc
+  ctx.fillStyle = 'white';
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], 540, startY + i * lineHeight);
+  }
+
+  const buffer = canvas.toBuffer('image/png');
+  fs.writeFileSync(outputPath, buffer);
 }
 
 export default async function handler(req, res) {
@@ -123,7 +122,7 @@ export default async function handler(req, res) {
       tasks.push(downloadFile(`${publicBaseUrl}/musique/${musique}`, musiquePath));
     }
     if (texte) {
-      tasks.push(createTextOverlay(texte, overlayPath));
+      createTextOverlay(texte, overlayPath);
     }
     await Promise.all(tasks);
 
