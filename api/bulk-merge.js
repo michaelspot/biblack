@@ -56,21 +56,25 @@ function createTextOverlay(text, outputPath) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  // Wrap sur 50% de la largeur (540px), max 3 lignes
+  // Retours à la ligne : après "et", et sur double espace
   const maxWidth = 864;
-  const words = cleanText.split(' ');
+  const prepared = cleanText.replace(/\s{2,}/g, '\n').replace(/\bet\b/gi, 'et\n');
+  const segments = prepared.split('\n').map(s => s.trim()).filter(Boolean);
   const lines = [];
-  let currentLine = '';
-  for (const word of words) {
-    const testLine = currentLine ? currentLine + ' ' + word : word;
-    if (ctx.measureText(testLine).width > maxWidth && currentLine) {
-      lines.push(currentLine);
-      currentLine = word;
-    } else {
-      currentLine = testLine;
+  for (const segment of segments) {
+    const words = segment.split(' ');
+    let currentLine = '';
+    for (const word of words) {
+      const testLine = currentLine ? currentLine + ' ' + word : word;
+      if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
     }
+    if (currentLine) lines.push(currentLine);
   }
-  if (currentLine) lines.push(currentLine);
   const displayLines = lines.slice(0, 3);
 
   const lineHeight = 48;
@@ -79,7 +83,7 @@ function createTextOverlay(text, outputPath) {
 
   // Bordure noire
   ctx.strokeStyle = 'black';
-  ctx.lineWidth = 4;
+  ctx.lineWidth = 8;
   ctx.lineJoin = 'round';
   for (let i = 0; i < displayLines.length; i++) {
     ctx.strokeText(displayLines[i], 540, startY + i * lineHeight);

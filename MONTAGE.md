@@ -29,12 +29,12 @@ Font TikTok Sans Medium (base64 JS module) → GlobalFonts.register() → Canvas
 - **Font** : TikTok Sans Medium 500 (base64 dans `api/font-tiktok.js`, enregistrée via `GlobalFonts.register()`)
 - **Taille** : `38px`
 - **Couleur fill** : `white`
-- **Stroke** : `black`, `lineWidth: 4`, `lineJoin: round`
+- **Stroke** : `black`, `lineWidth: 8`, `lineJoin: round`
 - **Rendu** : `strokeText()` d'abord (bordure derrière), puis `fillText()` (blanc devant)
 - **textAlign** : `center`
 - **textBaseline** : `middle`
 - **Line height** : 48px entre chaque ligne
-- **Word wrap** : Basé sur `ctx.measureText()`, largeur max 864px (80% du canvas), max 3 lignes
+- **Word wrap** : Basé sur `ctx.measureText()`, largeur max 864px (80% du canvas), max 3 lignes. Retour à la ligne forcé après "et" et sur double espace.
 - **Canvas** : 1080x1920 (plein écran TikTok)
 
 #### Positionnement
