@@ -1412,23 +1412,17 @@
       dropZone.innerHTML = '<span class="drop-zone-icon">...</span><div class="drop-zone-text">Upload en cours</div>';
 
       try {
-        // 1. Get presigned URL
-        const urlRes = await fetch('/api/get-upload-url', {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', type);
+
+        const res = await fetch('/api/upload', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ filename: file.name || 'video.mp4', type })
+          body: formData,
         });
-        const urlData = await urlRes.json();
-        if (!urlRes.ok) throw new Error(urlData.error);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
 
-        // 2. Upload directly to R2
-        const uploadRes = await fetch(urlData.uploadUrl, {
-          method: 'PUT',
-          body: file
-        });
-        if (!uploadRes.ok) throw new Error('Erreur upload vers R2');
-
-        // 3. Refresh and show
         await loadFiles();
         dropZone.innerHTML = originalText;
         showMainPage();
@@ -1637,7 +1631,7 @@
       startProgress();
 
       try {
-        const url = `/api/merge?hook=${encodeURIComponent(hookItem.name)}&capture=${encodeURIComponent(captureItem.name)}&hookPrefix=hooks/`;
+        const url = `/api/merge?hook=${encodeURIComponent(hookItem.name)}&capture=${encodeURIComponent(captureItem.name)}`;
         const res = await fetch(url);
         const data = await res.json();
 

@@ -1,99 +1,90 @@
-import { S3Client, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
+import cloudinary from './_cloudinary.js';
+import https from 'https';
 
-const s3 = new S3Client({
-  region: "auto",
-  endpoint: process.env.R2_ENDPOINT,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-  },
-});
-
-const publicBaseUrl = "https://pub-f14155236ed54ea8847eb4db5d3c64c1.r2.dev";
+function fetchJson(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, (response) => {
+      let data = '';
+      response.on('data', chunk => data += chunk);
+      response.on('end', () => {
+        try { resolve(JSON.parse(data)); } catch (e) { reject(e); }
+      });
+      response.on('error', reject);
+    }).on('error', reject);
+  });
+}
 
 export default async function handler(req, res) {
   try {
-    const [hooksResponse, capturesResponse, hookPostersResponse, capturePostersResponse, musiquesResponse, textesResponse] = await Promise.all([
-      s3.send(new ListObjectsV2Command({
-        Bucket: process.env.R2_BUCKET_NAME,
-        Prefix: "hooks/",
-      })),
-      s3.send(new ListObjectsV2Command({
-        Bucket: process.env.R2_BUCKET_NAME,
-        Prefix: "captures/",
-      })),
-      s3.send(new ListObjectsV2Command({
-        Bucket: process.env.R2_BUCKET_NAME,
-        Prefix: "posters/hooks/",
-      })),
-      s3.send(new ListObjectsV2Command({
-        Bucket: process.env.R2_BUCKET_NAME,
-        Prefix: "posters/captures/",
-      })),
-      s3.send(new ListObjectsV2Command({
-        Bucket: process.env.R2_BUCKET_NAME,
-        Prefix: "musique/",
-      })),
-      s3.send(new ListObjectsV2Command({
-        Bucket: process.env.R2_BUCKET_NAME,
-        Prefix: "textes/",
-      })),
+    const [hooksResult, capturesResult, musicsResult, textsResult] = await Promise.all([
+      cloudinary.api.resources({
+        type: 'upload',
+        resource_type: 'video',
+        prefix: 'hooks',
+        max_results: 500,
+      }),
+      cloudinary.api.resources({
+        type: 'upload',
+        resource_type: 'video',
+        prefix: 'screenrecordings',
+        max_results: 500,
+      }),
+      cloudinary.api.resources({
+        type: 'upload',
+        resource_type: 'video',
+        prefix: 'musics',
+        max_results: 500,
+      }),
+      cloudinary.api.resources({
+        type: 'upload',
+        resource_type: 'raw',
+        prefix: 'texts',
+        max_results: 10,
+      }),
     ]);
 
-    const hookPosterSet = new Set(
-      (hookPostersResponse.Contents || []).map(i => i.Key.replace("posters/hooks/", "").replace(".jpg", ""))
-    );
-    const capturePosterSet = new Set(
-      (capturePostersResponse.Contents || []).map(i => i.Key.replace("posters/captures/", "").replace(".jpg", ""))
-    );
+    const hooks = (hooksResult.resources || []).map(r => ({
+      name: r.public_id.replace('hooks/', '') + '.' + r.format,
+      url: r.secure_url,
+      posterUrl: cloudinary.url(r.public_id, {
+        resource_type: 'video',
+        format: 'jpg',
+        transformation: [{ width: 320, crop: 'scale' }],
+        secure: true,
+      }),
+      size: r.bytes,
+      lastModified: r.created_at,
+      public_id: r.public_id,
+    })).sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
 
-    const hooks = (hooksResponse.Contents || [])
-      .filter(item => item.Key !== "hooks/")
-      .map(item => {
-        const name = item.Key.replace("hooks/", "");
-        return {
-          name,
-          url: `${publicBaseUrl}/${item.Key}`,
-          posterUrl: hookPosterSet.has(name) ? `${publicBaseUrl}/posters/hooks/${name}.jpg` : null,
-          size: item.Size,
-          lastModified: item.LastModified,
-        };
-      })
-      .sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+    const captures = (capturesResult.resources || []).map(r => ({
+      name: r.public_id.replace('screenrecordings/', '') + '.' + r.format,
+      url: r.secure_url,
+      posterUrl: cloudinary.url(r.public_id, {
+        resource_type: 'video',
+        format: 'jpg',
+        transformation: [{ width: 320, crop: 'scale' }],
+        secure: true,
+      }),
+      size: r.bytes,
+      lastModified: r.created_at,
+      public_id: r.public_id,
+    })).sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
 
-    const captures = (capturesResponse.Contents || [])
-      .filter(item => item.Key !== "captures/")
-      .map(item => {
-        const name = item.Key.replace("captures/", "");
-        return {
-          name,
-          url: `${publicBaseUrl}/${item.Key}`,
-          posterUrl: capturePosterSet.has(name) ? `${publicBaseUrl}/posters/captures/${name}.jpg` : null,
-          size: item.Size,
-          lastModified: item.LastModified,
-        };
-      })
-      .sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
-
-    const musiques = (musiquesResponse.Contents || [])
-      .filter(item => item.Key !== "musique/")
-      .map(item => ({
-        name: item.Key.replace("musique/", ""),
-        url: `${publicBaseUrl}/${item.Key}`,
-        size: item.Size,
-        lastModified: item.LastModified,
-      }))
-      .sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+    const musiques = (musicsResult.resources || []).map(r => ({
+      name: r.public_id.replace('musics/', '') + '.' + r.format,
+      url: r.secure_url,
+      size: r.bytes,
+      lastModified: r.created_at,
+      public_id: r.public_id,
+    })).sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
 
     let textes = [];
-    const textesFiles = (textesResponse.Contents || []).filter(item => item.Key !== "textes/" && item.Key.endsWith('.json'));
-    if (textesFiles.length > 0) {
-      const textObj = await s3.send(new GetObjectCommand({
-        Bucket: process.env.R2_BUCKET_NAME,
-        Key: textesFiles[0].Key,
-      }));
-      const body = await textObj.Body.transformToString();
-      textes = JSON.parse(body);
+    const textFiles = (textsResult.resources || []).filter(r =>
+      r.public_id.includes('.json') || r.format === 'json'
+    );
+    if (textFiles.length > 0) {
+      textes = await fetchJson(textFiles[0].secure_url);
     }
 
     res.status(200).json({ hooks, captures, musiques, textes });

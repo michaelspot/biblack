@@ -1,13 +1,4 @@
-import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
-
-const s3 = new S3Client({
-  region: "auto",
-  endpoint: process.env.R2_ENDPOINT,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-  },
-});
+import cloudinary from './_cloudinary.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'DELETE') {
@@ -25,20 +16,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Type invalide. Utilisez "hook" ou "capture".' });
     }
 
-    const folder = type === 'hook' ? 'hooks' : 'captures';
-    const key = `${folder}/${filename}`;
-    const posterKey = `posters/${folder}/${filename}.jpg`;
+    const folder = type === 'hook' ? 'hooks' : 'screenrecordings';
+    const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
+    const publicId = `${folder}/${nameWithoutExt}`;
 
-    await Promise.all([
-      s3.send(new DeleteObjectCommand({
-        Bucket: process.env.R2_BUCKET_NAME,
-        Key: key,
-      })),
-      s3.send(new DeleteObjectCommand({
-        Bucket: process.env.R2_BUCKET_NAME,
-        Key: posterKey,
-      })).catch(() => {}),
-    ]);
+    await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
 
     res.status(200).json({
       message: 'Fichier supprimé',

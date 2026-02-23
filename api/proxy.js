@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   }
 
   // Vérifie que l'URL est bien de notre bucket R2
-  if (!url.startsWith("https://pub-f14155236ed54ea8847eb4db5d3c64c1.r2.dev/")) {
+  if (!url.startsWith("https://res.cloudinary.com/") && !url.startsWith("https://pub-f14155236ed54ea8847eb4db5d3c64c1.r2.dev/")) {
     return res.status(403).json({ error: "URL non autorisée" });
   }
 

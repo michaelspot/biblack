@@ -1,20 +1,8 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import formidable from "formidable";
-import fs from "fs";
-
-const s3 = new S3Client({
-  region: "auto",
-  endpoint: process.env.R2_ENDPOINT,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-  },
-});
+import cloudinary from './_cloudinary.js';
+import formidable from 'formidable';
 
 export const config = {
-  api: {
-    bodyParser: false,
-  },
+  api: { bodyParser: false },
 };
 
 export default async function handler(req, res) {
@@ -24,7 +12,6 @@ export default async function handler(req, res) {
 
   try {
     const form = formidable({ maxFileSize: 100 * 1024 * 1024 });
-
     const [fields, files] = await form.parse(req);
 
     const type = fields.type?.[0];
@@ -38,25 +25,20 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Type invalide.' });
     }
 
-    const buffer = fs.readFileSync(file.filepath);
-    const folder = type === 'hook' ? 'hooks' : 'captures';
+    const folder = type === 'hook' ? 'hooks' : 'screenrecordings';
     const filename = file.originalFilename || 'video.mp4';
-    const key = `${folder}/${filename}`;
+    const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
 
-    await s3.send(new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET_NAME,
-      Key: key,
-      Body: buffer,
-      ContentType: file.mimetype || 'video/mp4',
-    }));
-
-    fs.unlinkSync(file.filepath);
-
-    const publicBaseUrl = "https://pub-f14155236ed54ea8847eb4db5d3c64c1.r2.dev";
+    const result = await cloudinary.uploader.upload(file.filepath, {
+      folder: folder,
+      resource_type: 'video',
+      public_id: nameWithoutExt,
+      overwrite: true,
+    });
 
     res.status(200).json({
       message: 'Upload réussi',
-      url: `${publicBaseUrl}/${key}`,
+      url: result.secure_url,
       filename,
     });
   } catch (error) {

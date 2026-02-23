@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import cloudinary from './_cloudinary.js';
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
 import ffprobePath from "ffprobe-static";
@@ -13,17 +13,6 @@ GlobalFonts.register(Buffer.from(TIKTOK_BASE64, 'base64'), 'TikTokSans');
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath.path);
-
-const s3 = new S3Client({
-  region: "auto",
-  endpoint: process.env.R2_ENDPOINT,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-  },
-});
-
-const publicBaseUrl = "https://pub-f14155236ed54ea8847eb4db5d3c64c1.r2.dev";
 
 function downloadFile(url, destPath) {
   return new Promise((resolve, reject) => {
@@ -138,12 +127,16 @@ export default async function handler(req, res) {
 
   try {
     // Télécharge les fichiers en parallèle + génère le text overlay
+    const hookUrl = cloudinary.url('hooks/' + hook.replace(/\.[^/.]+$/, ''), { resource_type: 'video', secure: true });
+    const captureUrl = cloudinary.url('screenrecordings/' + capture.replace(/\.[^/.]+$/, ''), { resource_type: 'video', secure: true });
+
     const tasks = [
-      downloadFile(`${publicBaseUrl}/hooks/${hook}`, hookPath),
-      downloadFile(`${publicBaseUrl}/captures/${capture}`, capturePath),
+      downloadFile(hookUrl, hookPath),
+      downloadFile(captureUrl, capturePath),
     ];
     if (musique) {
-      tasks.push(downloadFile(`${publicBaseUrl}/musique/${musique}`, musiquePath));
+      const musiqueUrl = cloudinary.url('musics/' + musique.replace(/\.[^/.]+$/, ''), { resource_type: 'video', secure: true });
+      tasks.push(downloadFile(musiqueUrl, musiquePath));
     }
     if (texte) {
       createTextOverlay(texte, overlayPath, textY);
@@ -205,25 +198,19 @@ export default async function handler(req, res) {
       throw new Error("Le fichier de sortie n'a pas été créé.");
     }
 
-    // Upload vers R2
-    const fileName = `montages/bulk-${timestamp}.mp4`;
-    const fileStream = fs.createReadStream(outputPath);
-    const fileSize = fs.statSync(outputPath).size;
-
-    await s3.send(new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET_NAME,
-      Key: fileName,
-      Body: fileStream,
-      ContentLength: fileSize,
-      ContentType: "video/mp4",
-    }));
+    // Upload vers Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(outputPath, {
+      folder: 'montages',
+      resource_type: 'video',
+      public_id: `bulk-${timestamp}`,
+    });
 
     // Nettoie
     tempFiles.forEach(f => { if (fs.existsSync(f)) fs.unlinkSync(f); });
 
     res.status(200).json({
       message: "Vidéo générée !",
-      url: `${publicBaseUrl}/${fileName}`,
+      url: uploadResult.secure_url,
     });
 
   } catch (error) {
