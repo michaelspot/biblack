@@ -52,7 +52,7 @@ function createTextOverlay(text, outputPath) {
   const canvas = createCanvas(1080, 1920);
   const ctx = canvas.getContext('2d');
 
-  ctx.font = '500 28px TikTokSans';
+  ctx.font = '500 32px TikTokSans';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
@@ -73,13 +73,13 @@ function createTextOverlay(text, outputPath) {
   if (currentLine) lines.push(currentLine);
   const displayLines = lines.slice(0, 3);
 
-  const lineHeight = 36;
+  const lineHeight = 40;
   const totalHeight = displayLines.length * lineHeight;
   const startY = 960 - totalHeight / 2 + lineHeight / 2;
 
-  // Bordure blanche
-  ctx.strokeStyle = 'white';
-  ctx.lineWidth = 1;
+  // Bordure noire
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 2;
   ctx.lineJoin = 'round';
   for (let i = 0; i < displayLines.length; i++) {
     ctx.strokeText(displayLines[i], 540, startY + i * lineHeight);
