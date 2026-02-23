@@ -752,8 +752,11 @@
           <div class="bulk-list" id="bulkTexteThumbs"></div>
           <div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
             <span style="font-size:13px;color:#aaa;">Haut</span>
-            <input type="range" id="textPositionSlider" min="0" max="100" value="50" style="flex:1;accent-color:#fff;">
+            <input type="range" id="textPositionSlider" min="0" max="100" value="50" style="flex:1;accent-color:#fff;" oninput="updateTextPreview()">
             <span style="font-size:13px;color:#aaa;">Bas</span>
+          </div>
+          <div style="margin-top:12px;display:flex;justify-content:center;">
+            <canvas id="textPreviewCanvas" width="216" height="384" style="border-radius:8px;border:1px solid #333;"></canvas>
           </div>
         </div>
 
@@ -982,6 +985,57 @@
       showCurrentBulkCapture();
     }
 
+    function updateTextPreview() {
+      const canvas = document.getElementById('textPreviewCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width, h = canvas.height;
+      const scale = w / 1080;
+
+      // Fond noir
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0, 0, w, h);
+
+      // Non-safe zones en rouge semi-transparent
+      ctx.fillStyle = 'rgba(255, 0, 0, 0.35)';
+      // Haut 0-7%
+      ctx.fillRect(0, 0, w, h * 0.07);
+      // Droite 85-100% de 7% à 68%
+      ctx.fillRect(w * 0.85, h * 0.07, w * 0.15, h * 0.61);
+      // Bas 68-100%
+      ctx.fillRect(0, h * 0.68, w, h * 0.32);
+      // Gauche 0-5% de 7% à 68%
+      ctx.fillRect(0, h * 0.07, w * 0.05, h * 0.61);
+
+      // Texte lorem ipsum positionné selon le slider
+      const pos = Number(document.getElementById('textPositionSlider').value);
+      const safeTop = h * 0.07;
+      const safeBottom = h * 0.55;
+      const fontSize = Math.round(38 * scale);
+      const lineHeight = Math.round(48 * scale);
+      const centerX = Math.round(480 * scale);
+
+      ctx.font = `500 ${fontSize}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      const lines = ['Lorem ipsum dolor', 'sit amet et', 'consectetur'];
+      const totalHeight = lines.length * lineHeight;
+      const availableRange = safeBottom - safeTop - totalHeight;
+      const startY = safeTop + (availableRange * pos / 100) + lineHeight / 2;
+
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = Math.round(8 * scale);
+      ctx.lineJoin = 'round';
+      for (let i = 0; i < lines.length; i++) {
+        ctx.strokeText(lines[i], centerX, startY + i * lineHeight);
+      }
+      ctx.fillStyle = 'white';
+      for (let i = 0; i < lines.length; i++) {
+        ctx.fillText(lines[i], centerX, startY + i * lineHeight);
+      }
+    }
+
     function toggleSelectAll(key, container, items) {
       const selectedSet = bulkSelected[key];
       const allSelected = selectedSet.size === items.length;
@@ -1113,6 +1167,7 @@
         buildBulkThumbs(bulkCaptureThumbs, captures, 'capture', bulkSelected.captures, (i) => { currentBulkCaptureIndex = i; showCurrentBulkCapture(); });
         buildBulkList(document.getElementById('bulkMusiqueThumbs'), musiques, bulkSelected.musiques, (m) => m.name.replace(/\.[^/.]+$/, ''));
         buildBulkList(document.getElementById('bulkTexteThumbs'), textes, bulkSelected.textes, (t) => typeof t === 'string' ? t : (t.text || t.name || JSON.stringify(t)));
+        updateTextPreview();
 
         // Show app immediately, don't wait for videos
         loading.classList.add('hidden');
