@@ -8,7 +8,7 @@ import https from "https";
 import path from "path";
 import TIKTOK_BASE64 from "./font-tiktok.js";
 
-// Enregistrer la font TikTok Sans Bold au démarrage
+// Enregistrer la font TikTok Sans Medium au démarrage
 GlobalFonts.register(Buffer.from(TIKTOK_BASE64, 'base64'), 'TikTokSans');
 
 ffmpeg.setFfmpegPath(ffmpegPath);
@@ -69,17 +69,17 @@ function createTextOverlay(text, outputPath) {
   const ctx = canvas.getContext('2d');
 
   const lines = wrapText(cleanText, 20);
-  const lineHeight = 90;
+  const lineHeight = 20;
   const totalHeight = lines.length * lineHeight;
   const startY = 960 - totalHeight / 2 + lineHeight / 2;
 
-  ctx.font = 'bold 75px TikTokSans';
+  ctx.font = '500 16px TikTokSans';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  // Stroke noir (bordure épaisse)
-  ctx.strokeStyle = 'black';
-  ctx.lineWidth = 8;
+  // Bordure blanche
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 2;
   ctx.lineJoin = 'round';
   for (let i = 0; i < lines.length; i++) {
     ctx.strokeText(lines[i], 540, startY + i * lineHeight);

@@ -16,24 +16,24 @@ Endpoint : `/api/bulk-merge`
 Le filtre `drawtext` de FFmpeg n'est pas disponible dans le binaire `ffmpeg-static` sur Vercel. On utilise `@napi-rs/canvas` pour générer un PNG transparent :
 
 ```
-Font TikTok Sans Bold (base64 JS module) → GlobalFonts.register() → Canvas 2D → PNG → FFmpeg overlay filter
+Font TikTok Sans Medium (base64 JS module) → GlobalFonts.register() → Canvas 2D → PNG → FFmpeg overlay filter
 ```
 
 **Pourquoi @napi-rs/canvas :** sharp+SVG ne gère pas bien les fonts embarquées (carrés à la place du texte). `@napi-rs/canvas` utilise un vrai moteur de rendu texte avec `registerFont()`, `strokeText()` et `fillText()`.
 
-**Pourquoi embarquer la font :** Les polices système ne sont pas disponibles sur Vercel serverless. La font TikTok Sans Bold est stockée en base64 dans `api/font-tiktok.js` et enregistrée via `GlobalFonts.register()` au démarrage du module.
+**Pourquoi embarquer la font :** Les polices système ne sont pas disponibles sur Vercel serverless. La font TikTok Sans Medium est stockée en base64 dans `api/font-tiktok.js` et enregistrée via `GlobalFonts.register()` au démarrage du module.
 
 **Emojis :** Les emojis sont automatiquement retirés du texte avant le rendu (la font ne les supporte pas). Regex : `[\p{Emoji_Presentation}\p{Extended_Pictographic}]`.
 
 #### Style actuel (TikTok)
-- **Font** : TikTok Sans Bold (base64 dans `api/font-tiktok.js`, enregistrée via `GlobalFonts.register()`)
-- **Taille** : `75px`
+- **Font** : TikTok Sans Medium 500 (base64 dans `api/font-tiktok.js`, enregistrée via `GlobalFonts.register()`)
+- **Taille** : `16px`
 - **Couleur fill** : `white`
-- **Stroke** : `black`, `lineWidth: 8`, `lineJoin: round`
+- **Stroke** : `white`, `lineWidth: 2`, `lineJoin: round`
 - **Rendu** : `strokeText()` d'abord (bordure derrière), puis `fillText()` (blanc devant)
 - **textAlign** : `center`
 - **textBaseline** : `middle`
-- **Line height** : 90px entre chaque ligne
+- **Line height** : 20px entre chaque ligne
 - **Word wrap** : Automatique à 20 caractères max par ligne
 - **Canvas** : 1080x1920 (plein écran TikTok)
 
