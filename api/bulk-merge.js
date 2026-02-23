@@ -52,10 +52,10 @@ function createTextOverlay(text, outputPath, positionPercent = 50) {
   const canvas = createCanvas(1080, 1920);
   const ctx = canvas.getContext('2d');
 
-  // Safe zone TikTok : Y de 7% à 55%, X centré à 480px (décalé gauche à cause des icônes droite)
+  // Safe zone TikTok : Y de 7% à 60%
   const safeTop = Math.round(1920 * 0.07);    // 134px
-  const safeBottom = Math.round(1920 * 0.55);  // 1056px
-  const centerX = 480;
+  const safeBottom = Math.round(1920 * 0.60);  // 1152px
+  const centerX = 540;
 
   // Largeur max dépend de la position verticale
   // 7%-55% : 5% à 85% = 864px max

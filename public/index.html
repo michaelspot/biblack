@@ -998,22 +998,26 @@
 
       // Non-safe zones en rouge semi-transparent
       ctx.fillStyle = 'rgba(255, 0, 0, 0.35)';
-      // Haut 0-7%
+      // Haut 0-7% : status bar + Following/For You
       ctx.fillRect(0, 0, w, h * 0.07);
-      // Droite 85-100% de 7% à 68%
-      ctx.fillRect(w * 0.85, h * 0.07, w * 0.15, h * 0.61);
-      // Bas 68-100%
-      ctx.fillRect(0, h * 0.68, w, h * 0.32);
-      // Gauche 0-5% de 7% à 68%
-      ctx.fillRect(0, h * 0.07, w * 0.05, h * 0.61);
+      // 7%-45% : gauche 0-5% non-safe
+      ctx.fillRect(0, h * 0.07, w * 0.05, h * 0.38);
+      // 7%-45% : droite 95-100% non-safe (photo profil)
+      ctx.fillRect(w * 0.95, h * 0.07, w * 0.05, h * 0.38);
+      // 45%-60% : gauche 0-5% non-safe
+      ctx.fillRect(0, h * 0.45, w * 0.05, h * 0.15);
+      // 45%-60% : droite 85-100% non-safe (icônes)
+      ctx.fillRect(w * 0.85, h * 0.45, w * 0.15, h * 0.15);
+      // Bas 60-100% : non-safe
+      ctx.fillRect(0, h * 0.60, w, h * 0.40);
 
       // Texte lorem ipsum positionné selon le slider
       const pos = Number(document.getElementById('textPositionSlider').value);
       const safeTop = h * 0.07;
-      const safeBottom = h * 0.55;
+      const safeBottom = h * 0.60;
       const fontSize = Math.round(38 * scale);
       const lineHeight = Math.round(48 * scale);
-      const centerX = Math.round(480 * scale);
+      const centerX = Math.round(540 * scale);
 
       ctx.font = `500 ${fontSize}px sans-serif`;
       ctx.textAlign = 'center';

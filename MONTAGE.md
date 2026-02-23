@@ -38,19 +38,21 @@ Font TikTok Sans Medium (base64 JS module) → GlobalFonts.register() → Canvas
 - **Canvas** : 1080x1920 (plein écran TikTok)
 
 #### Safe zone TikTok
-- **Y safe** : de 7% (134px) à 55% (1056px) du canvas
-- **X safe** : de 5% à 85% (icônes à droite), centre décalé à `x = 480px`
+- **0% → 7%** : non-safe (status bar + Following/For You)
+- **7% → 45%** : safe, de 5% à 95% horizontal (photo profil en haut à droite)
+- **45% → 60%** : safe réduite, de 5% à 85% horizontal (icônes coeur/commentaire/bookmark/share à droite)
+- **60% → 100%** : non-safe (caption, CTA, navigation)
 - **Largeur max texte** : 864px (80% du canvas)
 
 #### Positionnement
-- **Horizontal** : Centré à `x = 480` (décalé gauche à cause des icônes droite)
+- **Horizontal** : Centré à `x = 540`
 - **Vertical** : Contrôlé par un slider (paramètre `textY`, 0-100). Formule :
 ```
 availableRange = safeBottom - safeTop - totalHeight
 startY = safeTop + (availableRange * textY / 100) + lineHeight / 2
 ```
-- `textY = 0` → texte en haut de la safe zone (134px)
-- `textY = 100` → texte en bas de la safe zone (1056px)
+- `textY = 0` → texte en haut de la safe zone (134px, 7%)
+- `textY = 100` → texte en bas de la safe zone (1152px, 60%)
 - `textY = 50` → centré dans la safe zone
 
 ## Pipeline de génération (Montage simple)
