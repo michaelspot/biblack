@@ -27,24 +27,24 @@ Font TikTok Sans Medium (base64 JS module) → GlobalFonts.register() → Canvas
 
 #### Style actuel (TikTok)
 - **Font** : TikTok Sans Medium 500 (base64 dans `api/font-tiktok.js`, enregistrée via `GlobalFonts.register()`)
-- **Taille** : `32px`
+- **Taille** : `38px`
 - **Couleur fill** : `white`
-- **Stroke** : `black`, `lineWidth: 2`, `lineJoin: round`
+- **Stroke** : `black`, `lineWidth: 4`, `lineJoin: round`
 - **Rendu** : `strokeText()` d'abord (bordure derrière), puis `fillText()` (blanc devant)
 - **textAlign** : `center`
 - **textBaseline** : `middle`
-- **Line height** : 40px entre chaque ligne
-- **Word wrap** : Basé sur `ctx.measureText()`, largeur max 540px (50% du canvas), max 3 lignes
+- **Line height** : 48px entre chaque ligne
+- **Word wrap** : Basé sur `ctx.measureText()`, largeur max 864px (80% du canvas), max 3 lignes
 - **Canvas** : 1080x1920 (plein écran TikTok)
 
 #### Positionnement
-- **Horizontal** : Centré (`textAlign = 'center'`, `x = 540`), texte sur 50% central (25% vide à gauche, 25% vide à droite)
+- **Horizontal** : Centré (`textAlign = 'center'`, `x = 540`), texte sur 80% central (10% vide à gauche, 10% vide à droite)
 - **Vertical** : Centré sur l'écran, formule :
 ```
 startY = 960 - (totalHeight / 2) + lineHeight / 2
 ```
 - `960` = milieu vertical du canvas 1920px
-- `totalHeight` = nombre de lignes × 40px
+- `totalHeight` = nombre de lignes × 48px
 - `+ lineHeight / 2` = ajustement car `textBaseline = 'middle'`
 
 ## Pipeline de génération (Montage simple)
