@@ -1000,21 +1000,22 @@
       ctx.fillStyle = 'rgba(255, 0, 0, 0.35)';
       // Haut 0-7% : status bar + Following/For You
       ctx.fillRect(0, 0, w, h * 0.07);
-      // 7%-45% : gauche 0-5% non-safe
+      // 7%-45% : gauche 0-5%
       ctx.fillRect(0, h * 0.07, w * 0.05, h * 0.38);
-      // 7%-45% : droite 95-100% non-safe (photo profil)
+      // 7%-45% : droite 95-100% (photo profil)
       ctx.fillRect(w * 0.95, h * 0.07, w * 0.05, h * 0.38);
-      // 45%-60% : gauche 0-5% non-safe
-      ctx.fillRect(0, h * 0.45, w * 0.05, h * 0.15);
-      // 45%-60% : droite 85-100% non-safe (icônes)
-      ctx.fillRect(w * 0.85, h * 0.45, w * 0.15, h * 0.15);
-      // Bas 60-100% : non-safe
-      ctx.fillRect(0, h * 0.60, w, h * 0.40);
+      // 45%-75% : gauche 0-5%
+      ctx.fillRect(0, h * 0.45, w * 0.05, h * 0.30);
+      // 45%-75% : droite 85-100% (icônes)
+      ctx.fillRect(w * 0.85, h * 0.45, w * 0.15, h * 0.30);
+      // Bas 75-100% : non-safe
+      ctx.fillRect(0, h * 0.75, w, h * 0.25);
 
       // Texte lorem ipsum positionné selon le slider
       const pos = Number(document.getElementById('textPositionSlider').value);
       const safeTop = h * 0.07;
-      const safeBottom = h * 0.60;
+      const safeBottom = h * 0.75;
+      const narrowStart = h * 0.45;
       const fontSize = Math.round(38 * scale);
       const lineHeight = Math.round(48 * scale);
       const centerX = Math.round(540 * scale);
@@ -1028,6 +1029,10 @@
       const availableRange = safeBottom - safeTop - totalHeight;
       const startY = safeTop + (availableRange * pos / 100) + lineHeight / 2;
 
+      // Largeur adaptée : 90% en haut (7-45%), 80% en bas (45-75%)
+      const bottomY = startY - lineHeight / 2 + totalHeight;
+      const textMaxW = bottomY > narrowStart ? Math.round(864 * scale) : Math.round(972 * scale);
+
       ctx.strokeStyle = 'black';
       ctx.lineWidth = Math.round(8 * scale);
       ctx.lineJoin = 'round';
@@ -1038,6 +1043,16 @@
       for (let i = 0; i < lines.length; i++) {
         ctx.fillText(lines[i], centerX, startY + i * lineHeight);
       }
+
+      // Indicateurs de largeur max (lignes fines verticales)
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 1;
+      const leftEdge = centerX - textMaxW / 2;
+      const rightEdge = centerX + textMaxW / 2;
+      ctx.beginPath();
+      ctx.moveTo(leftEdge, startY - lineHeight / 2); ctx.lineTo(leftEdge, startY - lineHeight / 2 + totalHeight);
+      ctx.moveTo(rightEdge, startY - lineHeight / 2); ctx.lineTo(rightEdge, startY - lineHeight / 2 + totalHeight);
+      ctx.stroke();
     }
 
     function toggleSelectAll(key, container, items) {
