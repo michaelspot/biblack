@@ -76,7 +76,7 @@ function createTextOverlay(text, outputPath, positionPercent = 50) {
   const centerX = inNarrowZone ? 486 : 540;
 
   // Retours à la ligne : après "et", et sur double espace
-  const prepared = cleanText.replace(/\s{2,}/g, '\n').replace(/\bet\b/gi, 'et\n');
+  const prepared = cleanText.replace(/\s{2,}/g, '\n');
   const segments = prepared.split('\n').map(s => s.trim()).filter(Boolean);
   const lines = [];
   for (const segment of segments) {

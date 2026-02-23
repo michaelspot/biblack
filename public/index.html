@@ -1037,7 +1037,7 @@
 
       // Word wrap identique au backend avec measureText
       const loremText = 'Lorem ipsum dolor sit amet et consectetur adipiscing';
-      const prepared = loremText.replace(/\bet\b/gi, 'et\n');
+      const prepared = loremText.replace(/\s{2,}/g, '\n');
       const segments = prepared.split('\n').map(s => s.trim()).filter(Boolean);
       const lines = [];
       for (const segment of segments) {
