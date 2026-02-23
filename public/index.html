@@ -1018,19 +1018,22 @@
       const narrowStart = h * 0.45;
       const fontSize = Math.round(38 * scale);
       const lineHeight = Math.round(48 * scale);
-      const centerX = Math.round(540 * scale);
 
       ctx.font = `500 ${fontSize}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
-      // Calculer la largeur dynamique selon la position estimée
+      // Déterminer la zone selon la position Y estimée
       const maxLines = 3;
       const estimatedHeight = maxLines * lineHeight;
       const estimatedRange = safeBottom - safeTop - estimatedHeight;
       const estimatedStartY = safeTop + (estimatedRange * pos / 100);
       const estimatedBottomY = estimatedStartY + estimatedHeight;
-      const textMaxW = estimatedBottomY > narrowStart ? Math.round(864 * scale) : Math.round(972 * scale);
+      const inNarrowZone = estimatedBottomY > narrowStart;
+      // 7-45% : 5% à 95% → centre 540, largeur 972
+      // 45-75% : 5% à 85% → centre 486, largeur 864
+      const textMaxW = Math.round((inNarrowZone ? 864 : 972) * scale);
+      const centerX = Math.round((inNarrowZone ? 486 : 540) * scale);
 
       // Word wrap identique au backend avec measureText
       const loremText = 'Lorem ipsum dolor sit amet et consectetur adipiscing';
@@ -1068,7 +1071,7 @@
         ctx.fillText(displayLines[i], centerX, startY + i * lineHeight);
       }
 
-      // Indicateurs de largeur max (lignes fines verticales)
+      // Indicateurs de largeur safe zone (lignes fines verticales)
       ctx.strokeStyle = 'rgba(255,255,255,0.15)';
       ctx.lineWidth = 1;
       const leftEdge = centerX - textMaxW / 2;

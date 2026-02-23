@@ -47,7 +47,9 @@ Font TikTok Sans Medium (base64 JS module) → GlobalFonts.register() → Canvas
   - Zone 45%-75% : 864px (80% du canvas)
 
 #### Positionnement
-- **Horizontal** : Centré à `x = 540`
+- **Horizontal** : Centré dynamiquement selon la zone
+  - Zone 7%-45% : `x = 540` (centre de 5%-95%)
+  - Zone 45%-75% : `x = 486` (centre de 5%-85%)
 - **Vertical** : Contrôlé par un slider (paramètre `textY`, 0-100). Formule :
 ```
 availableRange = safeBottom - safeTop - totalHeight
