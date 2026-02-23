@@ -53,15 +53,15 @@ function createTextOverlay(text, outputPath, positionPercent = 50) {
   const ctx = canvas.getContext('2d');
 
   // Safe zone TikTok : Y de 7% à 75%
-  // 7%-45% : X de 5% à 95% → centre 540px, largeur 972px
-  // 45%-75% : X de 5% à 85% → centre 486px, largeur 864px
+  // 7%-45% : X de 8% à 92% → centre 540px, largeur 907px
+  // 45%-75% : X de 8% à 82% → centre 486px, largeur 799px
   const safeTop = Math.round(1920 * 0.07);     // 134px
   const safeBottom = Math.round(1920 * 0.75);   // 1440px
   const narrowStart = Math.round(1920 * 0.45);  // 864px
 
   const pos = Math.max(0, Math.min(100, Number(positionPercent)));
 
-  ctx.font = '500 50px TikTokSans';
+  ctx.font = '500 54px TikTokSans';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
@@ -72,7 +72,7 @@ function createTextOverlay(text, outputPath, positionPercent = 50) {
   const estimatedStartY = safeTop + (estimatedRange * pos / 100);
   const estimatedBottomY = estimatedStartY + estimatedHeight;
   const inNarrowZone = estimatedBottomY > narrowStart;
-  const maxWidth = inNarrowZone ? 864 : 972;
+  const maxWidth = inNarrowZone ? 799 : 907;
   const centerX = inNarrowZone ? 486 : 540;
 
   // Retours à la ligne : après "et", et sur double espace
