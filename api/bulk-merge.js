@@ -47,48 +47,48 @@ function stripEmojis(text) {
   return text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').replace(/\s+/g, ' ').trim();
 }
 
-function wrapText(text, maxChars = 20) {
-  const words = text.split(' ');
-  const lines = [];
-  let currentLine = '';
-  for (const word of words) {
-    if ((currentLine + ' ' + word).trim().length > maxChars && currentLine) {
-      lines.push(currentLine.trim());
-      currentLine = word;
-    } else {
-      currentLine += ' ' + word;
-    }
-  }
-  if (currentLine.trim()) lines.push(currentLine.trim());
-  return lines;
-}
-
 function createTextOverlay(text, outputPath) {
   const cleanText = stripEmojis(text);
   const canvas = createCanvas(1080, 1920);
   const ctx = canvas.getContext('2d');
 
-  const lines = wrapText(cleanText, 20);
-  const lineHeight = 20;
-  const totalHeight = lines.length * lineHeight;
-  const startY = 960 - totalHeight / 2 + lineHeight / 2;
-
-  ctx.font = '500 16px TikTokSans';
+  ctx.font = '500 28px TikTokSans';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
+  // Wrap sur 50% de la largeur (540px), max 3 lignes
+  const maxWidth = 540;
+  const words = cleanText.split(' ');
+  const lines = [];
+  let currentLine = '';
+  for (const word of words) {
+    const testLine = currentLine ? currentLine + ' ' + word : word;
+    if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = testLine;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+  const displayLines = lines.slice(0, 3);
+
+  const lineHeight = 36;
+  const totalHeight = displayLines.length * lineHeight;
+  const startY = 960 - totalHeight / 2 + lineHeight / 2;
+
   // Bordure blanche
   ctx.strokeStyle = 'white';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 1;
   ctx.lineJoin = 'round';
-  for (let i = 0; i < lines.length; i++) {
-    ctx.strokeText(lines[i], 540, startY + i * lineHeight);
+  for (let i = 0; i < displayLines.length; i++) {
+    ctx.strokeText(displayLines[i], 540, startY + i * lineHeight);
   }
 
   // Fill blanc
   ctx.fillStyle = 'white';
-  for (let i = 0; i < lines.length; i++) {
-    ctx.fillText(lines[i], 540, startY + i * lineHeight);
+  for (let i = 0; i < displayLines.length; i++) {
+    ctx.fillText(displayLines[i], 540, startY + i * lineHeight);
   }
 
   const buffer = canvas.toBuffer('image/png');
