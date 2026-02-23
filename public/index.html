@@ -1151,6 +1151,7 @@
       const btn = event.currentTarget;
       btn.classList.toggle('all-selected', !allSelected);
       btn.textContent = !allSelected ? 'Tout désélectionner' : 'Tout sélectionner';
+      updateBulkButton();
     }
 
     function buildBulkThumbs(container, items, type, selectedSet, onClickItem) {
@@ -1182,6 +1183,7 @@
             selectedSet.add(i);
           }
           check.style.display = selectedSet.has(i) ? 'flex' : 'none';
+          updateBulkButton();
           if (onClickItem) onClickItem(i);
         });
 
@@ -1213,6 +1215,7 @@
           // Toggle sélection
           if (selectedSet.has(i)) { selectedSet.delete(i); } else { selectedSet.add(i); }
           check.style.display = selectedSet.has(i) ? 'flex' : 'none';
+          updateBulkButton();
         });
 
         playBtn.style.pointerEvents = 'auto';
@@ -1262,6 +1265,7 @@
         div.addEventListener('click', () => {
           if (selectedSet.has(i)) { selectedSet.delete(i); } else { selectedSet.add(i); }
           check.style.display = selectedSet.has(i) ? 'flex' : 'none';
+          updateBulkButton();
         });
 
         container.appendChild(div);
@@ -1318,6 +1322,7 @@
         buildBulkMusique(document.getElementById('bulkMusiqueThumbs'), musiques, bulkSelected.musiques);
         buildBulkTexte(document.getElementById('bulkTexteThumbs'), textes, bulkSelected.textes);
         updateTextPreview();
+        updateBulkButton();
 
         // Show app immediately, don't wait for videos
         loading.classList.add('hidden');
@@ -1665,6 +1670,15 @@
 
     function setBulkButtonsText(text) {
       bulkBtns.forEach(btn => { if (btn) btn.textContent = text || 'Bulk Générer'; });
+    }
+
+    function updateBulkButton() {
+      const ready = bulkSelected.hooks.size > 0 && bulkSelected.captures.size > 0 && bulkSelected.musiques.size > 0 && bulkSelected.textes.size > 0;
+      bulkBtns.forEach(btn => {
+        if (!btn) return;
+        btn.disabled = !ready;
+        btn.textContent = ready ? 'Bulk Générer' : 'Sélectionne 1 élément par section';
+      });
     }
 
     function pickRandom(arr) {
