@@ -1024,24 +1024,48 @@
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
-      const lines = ['Lorem ipsum dolor', 'sit amet et', 'consectetur'];
-      const totalHeight = lines.length * lineHeight;
+      // Calculer la largeur dynamique selon la position estimée
+      const maxLines = 3;
+      const estimatedHeight = maxLines * lineHeight;
+      const estimatedRange = safeBottom - safeTop - estimatedHeight;
+      const estimatedStartY = safeTop + (estimatedRange * pos / 100);
+      const estimatedBottomY = estimatedStartY + estimatedHeight;
+      const textMaxW = estimatedBottomY > narrowStart ? Math.round(864 * scale) : Math.round(972 * scale);
+
+      // Word wrap identique au backend avec measureText
+      const loremText = 'Lorem ipsum dolor sit amet et consectetur adipiscing';
+      const prepared = loremText.replace(/\bet\b/gi, 'et\n');
+      const segments = prepared.split('\n').map(s => s.trim()).filter(Boolean);
+      const lines = [];
+      for (const segment of segments) {
+        const words = segment.split(' ');
+        let currentLine = '';
+        for (const word of words) {
+          const testLine = currentLine ? currentLine + ' ' + word : word;
+          if (ctx.measureText(testLine).width > textMaxW && currentLine) {
+            lines.push(currentLine);
+            currentLine = word;
+          } else {
+            currentLine = testLine;
+          }
+        }
+        if (currentLine) lines.push(currentLine);
+      }
+      const displayLines = lines.slice(0, 3);
+
+      const totalHeight = displayLines.length * lineHeight;
       const availableRange = safeBottom - safeTop - totalHeight;
       const startY = safeTop + (availableRange * pos / 100) + lineHeight / 2;
-
-      // Largeur adaptée : 90% en haut (7-45%), 80% en bas (45-75%)
-      const bottomY = startY - lineHeight / 2 + totalHeight;
-      const textMaxW = bottomY > narrowStart ? Math.round(864 * scale) : Math.round(972 * scale);
 
       ctx.strokeStyle = 'black';
       ctx.lineWidth = Math.round(8 * scale);
       ctx.lineJoin = 'round';
-      for (let i = 0; i < lines.length; i++) {
-        ctx.strokeText(lines[i], centerX, startY + i * lineHeight);
+      for (let i = 0; i < displayLines.length; i++) {
+        ctx.strokeText(displayLines[i], centerX, startY + i * lineHeight);
       }
       ctx.fillStyle = 'white';
-      for (let i = 0; i < lines.length; i++) {
-        ctx.fillText(lines[i], centerX, startY + i * lineHeight);
+      for (let i = 0; i < displayLines.length; i++) {
+        ctx.fillText(displayLines[i], centerX, startY + i * lineHeight);
       }
 
       // Indicateurs de largeur max (lignes fines verticales)
