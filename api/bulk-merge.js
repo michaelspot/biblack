@@ -61,7 +61,7 @@ function createTextOverlay(text, outputPath, positionPercent = 50) {
 
   const pos = Math.max(0, Math.min(100, Number(positionPercent)));
 
-  ctx.font = '500 42px TikTokSans';
+  ctx.font = '500 50px TikTokSans';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
