@@ -347,6 +347,60 @@
       white-space: nowrap;
     }
 
+    .bulk-music-item {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      background: #222;
+      border-radius: 8px;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .bulk-music-item .play-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .bulk-music-item .play-btn::after {
+      content: '▶';
+      font-size: 14px;
+      color: #fff;
+      margin-left: 2px;
+    }
+
+    .bulk-music-item.playing .play-btn::after {
+      content: '⏸';
+      margin-left: 0;
+    }
+
+    .bulk-texte-item {
+      position: relative;
+      padding: 8px 12px;
+      padding-right: 28px;
+      background: #222;
+      border-radius: 8px;
+      cursor: pointer;
+      flex-shrink: 0;
+      font-size: 11px;
+      color: #ccc;
+      transition: background 0.2s;
+      white-space: pre-line;
+      line-height: 1.4;
+      text-align: center;
+      min-width: 80px;
+    }
+
     .btn-delete {
       position: absolute;
       top: 8px;
@@ -1135,15 +1189,69 @@
       }
     }
 
-    function buildBulkList(container, items, selectedSet, labelFn) {
+    let currentAudio = null;
+    let currentMusicItem = null;
+
+    function buildBulkMusique(container, items, selectedSet) {
       container.innerHTML = '';
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         const div = document.createElement('div');
-        div.className = 'bulk-list-item';
+        div.className = 'bulk-music-item';
+        div.dataset.index = i;
+
+        const playBtn = document.createElement('div');
+        playBtn.className = 'play-btn';
+        div.appendChild(playBtn);
+
+        const check = document.createElement('div');
+        check.className = 'thumb-check';
+        check.textContent = '✓';
+        div.appendChild(check);
+
+        div.addEventListener('click', (e) => {
+          // Toggle sélection
+          if (selectedSet.has(i)) { selectedSet.delete(i); } else { selectedSet.add(i); }
+          check.style.display = selectedSet.has(i) ? 'flex' : 'none';
+        });
+
+        playBtn.style.pointerEvents = 'auto';
+        playBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (currentAudio && currentMusicItem === div) {
+            currentAudio.pause();
+            currentAudio = null;
+            div.classList.remove('playing');
+            currentMusicItem = null;
+          } else {
+            if (currentAudio) { currentAudio.pause(); currentMusicItem.classList.remove('playing'); }
+            currentAudio = new Audio(item.url);
+            currentMusicItem = div;
+            div.classList.add('playing');
+            currentAudio.play();
+            currentAudio.onended = () => { div.classList.remove('playing'); currentAudio = null; currentMusicItem = null; };
+          }
+        });
+
+        container.appendChild(div);
+      }
+    }
+
+    function formatTexteLines(text) {
+      const raw = typeof text === 'string' ? text : (text.text || text.name || JSON.stringify(text));
+      return raw.replace(/\s{2,}/g, '\n').trim();
+    }
+
+    function buildBulkTexte(container, items, selectedSet) {
+      container.innerHTML = '';
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const div = document.createElement('div');
+        div.className = 'bulk-texte-item';
+        div.dataset.index = i;
 
         const label = document.createElement('span');
-        label.textContent = labelFn ? labelFn(item) : item;
+        label.textContent = formatTexteLines(item);
         div.appendChild(label);
 
         const check = document.createElement('div');
@@ -1152,11 +1260,7 @@
         div.appendChild(check);
 
         div.addEventListener('click', () => {
-          if (selectedSet.has(i)) {
-            selectedSet.delete(i);
-          } else {
-            selectedSet.add(i);
-          }
+          if (selectedSet.has(i)) { selectedSet.delete(i); } else { selectedSet.add(i); }
           check.style.display = selectedSet.has(i) ? 'flex' : 'none';
         });
 
@@ -1211,8 +1315,8 @@
         // Build bulk multi-select thumbs
         buildBulkThumbs(bulkHookThumbs, hooks, 'hook', bulkSelected.hooks, (i) => { currentBulkHookIndex = i; showCurrentBulkHook(); });
         buildBulkThumbs(bulkCaptureThumbs, captures, 'capture', bulkSelected.captures, (i) => { currentBulkCaptureIndex = i; showCurrentBulkCapture(); });
-        buildBulkList(document.getElementById('bulkMusiqueThumbs'), musiques, bulkSelected.musiques, (m) => m.name.replace(/\.[^/.]+$/, ''));
-        buildBulkList(document.getElementById('bulkTexteThumbs'), textes, bulkSelected.textes, (t) => typeof t === 'string' ? t : (t.text || t.name || JSON.stringify(t)));
+        buildBulkMusique(document.getElementById('bulkMusiqueThumbs'), musiques, bulkSelected.musiques);
+        buildBulkTexte(document.getElementById('bulkTexteThumbs'), textes, bulkSelected.textes);
         updateTextPreview();
 
         // Show app immediately, don't wait for videos
@@ -1573,8 +1677,8 @@
       const selMusiques = [...bulkSelected.musiques].map(i => musiques[i]);
       const selTextes = [...bulkSelected.textes].map(i => textes[i]);
 
-      if (selHooks.length === 0 || selCaptures.length === 0) {
-        showError('Sélectionne au moins 1 hook et 1 capture.');
+      if (selHooks.length === 0 || selCaptures.length === 0 || selMusiques.length === 0 || selTextes.length === 0) {
+        showError('Sélectionne au moins 1 élément dans chaque section.');
         return;
       }
 
