@@ -750,6 +750,11 @@
             <button class="btn-select-all" onclick="toggleSelectAll('textes', document.getElementById('bulkTexteThumbs'), textes)">Tout sélectionner</button>
           </div>
           <div class="bulk-list" id="bulkTexteThumbs"></div>
+          <div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
+            <span style="font-size:13px;color:#aaa;">Haut</span>
+            <input type="range" id="textPositionSlider" min="0" max="100" value="50" style="flex:1;accent-color:#fff;">
+            <span style="font-size:13px;color:#aaa;">Bas</span>
+          </div>
         </div>
 
         <!-- Desktop button -->
@@ -1516,7 +1521,8 @@
           if (combo.musique) url += `&musique=${encodeURIComponent(combo.musique.name)}`;
           if (combo.texte) {
             const texteStr = typeof combo.texte === 'string' ? combo.texte : (combo.texte.text || combo.texte.name || '');
-            url += `&texte=${encodeURIComponent(texteStr)}`;
+            const textY = document.getElementById('textPositionSlider').value;
+            url += `&texte=${encodeURIComponent(texteStr)}&textY=${textY}`;
           }
 
           const res = await fetch(url);

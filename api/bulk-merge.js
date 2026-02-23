@@ -47,17 +47,29 @@ function stripEmojis(text) {
   return text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').replace(/\s+/g, ' ').trim();
 }
 
-function createTextOverlay(text, outputPath) {
+function createTextOverlay(text, outputPath, positionPercent = 50) {
   const cleanText = stripEmojis(text);
   const canvas = createCanvas(1080, 1920);
   const ctx = canvas.getContext('2d');
+
+  // Safe zone TikTok : Y de 7% à 55%, X centré à 480px (décalé gauche à cause des icônes droite)
+  const safeTop = Math.round(1920 * 0.07);    // 134px
+  const safeBottom = Math.round(1920 * 0.55);  // 1056px
+  const centerX = 480;
+
+  // Largeur max dépend de la position verticale
+  // 7%-55% : 5% à 85% = 864px max
+  // 55%-68% : réduit à droite (icônes), ~5% à 70% = 702px max
+  const pos = Math.max(0, Math.min(100, Number(positionPercent)));
 
   ctx.font = '500 38px TikTokSans';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  // Retours à la ligne : après "et", et sur double espace
+  // Largeur max selon la zone
   const maxWidth = 864;
+
+  // Retours à la ligne : après "et", et sur double espace
   const prepared = cleanText.replace(/\s{2,}/g, '\n').replace(/\bet\b/gi, 'et\n');
   const segments = prepared.split('\n').map(s => s.trim()).filter(Boolean);
   const lines = [];
@@ -79,20 +91,23 @@ function createTextOverlay(text, outputPath) {
 
   const lineHeight = 48;
   const totalHeight = displayLines.length * lineHeight;
-  const startY = 960 - totalHeight / 2 + lineHeight / 2;
+
+  // Position Y basée sur le slider (0=haut safe zone, 100=bas safe zone)
+  const availableRange = safeBottom - safeTop - totalHeight;
+  const startY = safeTop + (availableRange * pos / 100) + lineHeight / 2;
 
   // Bordure noire
   ctx.strokeStyle = 'black';
   ctx.lineWidth = 8;
   ctx.lineJoin = 'round';
   for (let i = 0; i < displayLines.length; i++) {
-    ctx.strokeText(displayLines[i], 540, startY + i * lineHeight);
+    ctx.strokeText(displayLines[i], centerX, startY + i * lineHeight);
   }
 
   // Fill blanc
   ctx.fillStyle = 'white';
   for (let i = 0; i < displayLines.length; i++) {
-    ctx.fillText(displayLines[i], 540, startY + i * lineHeight);
+    ctx.fillText(displayLines[i], centerX, startY + i * lineHeight);
   }
 
   const buffer = canvas.toBuffer('image/png');
@@ -100,7 +115,7 @@ function createTextOverlay(text, outputPath) {
 }
 
 export default async function handler(req, res) {
-  const { hook, capture, musique, texte } = req.query;
+  const { hook, capture, musique, texte, textY } = req.query;
 
   if (!hook || !capture) {
     return res.status(400).json({ error: "Il manque le hook ou la capture." });
@@ -126,7 +141,7 @@ export default async function handler(req, res) {
       tasks.push(downloadFile(`${publicBaseUrl}/musique/${musique}`, musiquePath));
     }
     if (texte) {
-      createTextOverlay(texte, overlayPath);
+      createTextOverlay(texte, overlayPath, textY);
     }
     await Promise.all(tasks);
 
