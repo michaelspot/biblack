@@ -42,26 +42,20 @@ function probeVideo(filePath) {
 }
 
 export default async function handler(req, res) {
-  const { hook, capture } = req.query;
+  const { hookUrl, captureUrl } = req.query;
 
-  if (!hook || !capture) {
+  if (!hookUrl || !captureUrl) {
     return res.status(400).json({ error: "Il manque le hook ou la capture." });
   }
 
   const timestamp = Date.now();
-  const hookPath = `/tmp/hook-${timestamp}${path.extname(hook)}`;
-  const capturePath = `/tmp/capture-${timestamp}${path.extname(capture)}`;
+  const hookPath = `/tmp/hook-${timestamp}.mp4`;
+  const capturePath = `/tmp/capture-${timestamp}.mp4`;
   const outputPath = `/tmp/output-${timestamp}.mp4`;
   const concatListPath = `/tmp/concat-${timestamp}.txt`;
   const tempFiles = [hookPath, capturePath, outputPath, concatListPath];
 
   try {
-    const hookPublicId = 'hooks/' + hook.replace(/\.[^/.]+$/, '');
-    const capturePublicId = 'screenrecordings/' + capture.replace(/\.[^/.]+$/, '');
-
-    const hookUrl = cloudinary.url(hookPublicId, { resource_type: 'video', secure: true });
-    const captureUrl = cloudinary.url(capturePublicId, { resource_type: 'video', secure: true });
-
     console.log("Téléchargement des fichiers...");
     await Promise.all([
       downloadFile(hookUrl, hookPath),

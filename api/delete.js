@@ -6,25 +6,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { filename, type } = req.query;
+    const { publicId, resourceType } = req.query;
 
-    if (!filename || !type) {
-      return res.status(400).json({ error: 'Paramètres manquants : filename et type requis.' });
+    if (!publicId) {
+      return res.status(400).json({ error: 'Paramètre manquant : publicId requis.' });
     }
 
-    if (!['hook', 'capture'].includes(type)) {
-      return res.status(400).json({ error: 'Type invalide. Utilisez "hook" ou "capture".' });
-    }
-
-    const folder = type === 'hook' ? 'hooks' : 'screenrecordings';
-    const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
-    const publicId = `${folder}/${nameWithoutExt}`;
-
-    await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
+    await cloudinary.uploader.destroy(publicId, { resource_type: resourceType || 'video' });
 
     res.status(200).json({
       message: 'Fichier supprimé',
-      filename,
+      publicId,
     });
   } catch (error) {
     console.error('Delete error:', error);

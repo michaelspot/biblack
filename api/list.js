@@ -14,17 +14,17 @@ function fetchJson(url) {
   });
 }
 
-async function listResources(prefix, resourceType) {
+async function listResources(folder, resourceType) {
   try {
     const result = await cloudinary.api.resources({
       type: 'upload',
       resource_type: resourceType,
-      prefix: prefix,
+      asset_folder: folder,
       max_results: 500,
     });
     return result.resources || [];
   } catch (e) {
-    console.log(`No ${resourceType} resources found for prefix "${prefix}":`, e.message);
+    console.log(`No ${resourceType} resources found for folder "${folder}":`, e.message);
     return [];
   }
 }
@@ -51,7 +51,7 @@ export default async function handler(req, res) {
     ]);
 
     const hooks = hooksVideo.map(r => ({
-      name: r.public_id.replace('hooks/', '') + '.' + r.format,
+      name: (r.display_name || r.public_id.replace(/^.*\//, '')) + '.' + r.format,
       url: r.secure_url,
       posterUrl: cloudinary.url(r.public_id, {
         resource_type: 'video',
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
     })).sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
 
     const captures = capturesVideo.map(r => ({
-      name: r.public_id.replace('screenrecordings/', '') + '.' + r.format,
+      name: (r.display_name || r.public_id.replace(/^.*\//, '')) + '.' + r.format,
       url: r.secure_url,
       posterUrl: cloudinary.url(r.public_id, {
         resource_type: 'video',
@@ -81,7 +81,7 @@ export default async function handler(req, res) {
     // Combiner musiques video + raw
     const allMusics = [...musicsVideo, ...musicsRaw];
     const musiques = allMusics.map(r => ({
-      name: r.public_id.replace('musics/', '') + '.' + r.format,
+      name: (r.display_name || r.public_id.replace(/^.*\//, '')) + '.' + r.format,
       url: r.secure_url,
       size: r.bytes,
       lastModified: r.created_at,
@@ -100,8 +100,9 @@ export default async function handler(req, res) {
     }
 
     console.log(`List: ${hooks.length} hooks, ${captures.length} captures, ${musiques.length} musiques, ${textes.length} textes`);
-    console.log('Text files found:', allTexts.map(r => `${r.public_id} (${r.resource_type}/${r.format})`));
-    console.log('Music files found:', allMusics.map(r => `${r.public_id} (${r.resource_type}/${r.format})`));
+    console.log('All resources:', { hooksVideo: hooksVideo.length, capturesVideo: capturesVideo.length, musicsVideo: musicsVideo.length, musicsRaw: musicsRaw.length, textsRaw: textsRaw.length, textsImage: textsImage.length });
+    if (hooksVideo.length > 0) console.log('Hook sample:', hooksVideo[0].public_id, hooksVideo[0].asset_folder);
+    if (capturesVideo.length > 0) console.log('Capture sample:', capturesVideo[0].public_id, capturesVideo[0].asset_folder);
 
     res.status(200).json({ hooks, captures, musiques, textes });
   } catch (error) {

@@ -109,16 +109,16 @@ function createTextOverlay(text, outputPath, positionPercent = 50) {
 }
 
 export default async function handler(req, res) {
-  const { hook, capture, musique, texte, textY } = req.query;
+  const { hookUrl, captureUrl, musiqueUrl, texte, textY } = req.query;
 
-  if (!hook || !capture) {
+  if (!hookUrl || !captureUrl) {
     return res.status(400).json({ error: "Il manque le hook ou la capture." });
   }
 
   const timestamp = Date.now() + Math.random().toString(36).slice(2, 6);
-  const hookPath = `/tmp/hook-${timestamp}${path.extname(hook)}`;
-  const capturePath = `/tmp/capture-${timestamp}${path.extname(capture)}`;
-  const musiquePath = musique ? `/tmp/musique-${timestamp}${path.extname(musique)}` : null;
+  const hookPath = `/tmp/hook-${timestamp}.mp4`;
+  const capturePath = `/tmp/capture-${timestamp}.mp4`;
+  const musiquePath = musiqueUrl ? `/tmp/musique-${timestamp}.mp3` : null;
   const overlayPath = texte ? `/tmp/overlay-${timestamp}.png` : null;
   const outputPath = `/tmp/output-${timestamp}.mp4`;
   const tempFiles = [hookPath, capturePath, outputPath];
@@ -127,15 +127,11 @@ export default async function handler(req, res) {
 
   try {
     // Télécharge les fichiers en parallèle + génère le text overlay
-    const hookUrl = cloudinary.url('hooks/' + hook.replace(/\.[^/.]+$/, ''), { resource_type: 'video', secure: true });
-    const captureUrl = cloudinary.url('screenrecordings/' + capture.replace(/\.[^/.]+$/, ''), { resource_type: 'video', secure: true });
-
     const tasks = [
       downloadFile(hookUrl, hookPath),
       downloadFile(captureUrl, capturePath),
     ];
-    if (musique) {
-      const musiqueUrl = cloudinary.url('musics/' + musique.replace(/\.[^/.]+$/, ''), { resource_type: 'video', secure: true });
+    if (musiqueUrl) {
       tasks.push(downloadFile(musiqueUrl, musiquePath));
     }
     if (texte) {
@@ -155,7 +151,7 @@ export default async function handler(req, res) {
     // Overlay du texte en PNG transparent
     if (texte) {
       // L'index de l'input overlay dépend de si la musique est présente
-      const overlayIdx = musiquePath ? 3 : 2;
+      const overlayIdx = musiqueUrl ? 3 : 2;
       filterParts.push(
         `[concatv][${overlayIdx}:v]overlay=0:0[outv]`
       );

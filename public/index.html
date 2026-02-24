@@ -929,7 +929,7 @@
         img.loading = 'eager';
 
         // Use cached poster if available, otherwise generate via API
-        const posterSrc = item.posterUrl || `/api/poster?type=${type}&filename=${encodeURIComponent(item.name)}`;
+        const posterSrc = item.posterUrl || `/api/poster?publicId=${encodeURIComponent(item.public_id)}`;
         img.src = posterSrc;
 
         div.appendChild(img);
@@ -966,7 +966,7 @@
       const item = hooks[currentHookIndex];
 
       // Show poster instantly while video loads
-      const posterSrc = item.posterUrl || `/api/poster?type=hook&filename=${encodeURIComponent(item.name)}`;
+      const posterSrc = item.posterUrl || `/api/poster?publicId=${encodeURIComponent(item.public_id)}`;
       hookPreviewVideo.poster = posterSrc;
       hookPreviewVideo.src = item.url;
       hookPreviewVideo.play().catch(() => {});
@@ -981,7 +981,7 @@
       const item = captures[currentCaptureIndex];
 
       // Show poster instantly while video loads
-      const posterSrc = item.posterUrl || `/api/poster?type=capture&filename=${encodeURIComponent(item.name)}`;
+      const posterSrc = item.posterUrl || `/api/poster?publicId=${encodeURIComponent(item.public_id)}`;
       capturePreviewVideo.poster = posterSrc;
       capturePreviewVideo.src = item.url;
       capturePreviewVideo.play().catch(() => {});
@@ -1006,7 +1006,7 @@
       if (currentBulkHookIndex >= hooks.length) currentBulkHookIndex = 0;
       if (currentBulkHookIndex < 0) currentBulkHookIndex = hooks.length - 1;
       const item = hooks[currentBulkHookIndex];
-      const posterSrc = item.posterUrl || `/api/poster?type=hook&filename=${encodeURIComponent(item.name)}`;
+      const posterSrc = item.posterUrl || `/api/poster?publicId=${encodeURIComponent(item.public_id)}`;
       bulkHookPreviewVideo.poster = posterSrc;
       bulkHookPreviewVideo.src = item.url;
       bulkHookPreviewVideo.play().catch(() => {});
@@ -1019,7 +1019,7 @@
       if (currentBulkCaptureIndex >= captures.length) currentBulkCaptureIndex = 0;
       if (currentBulkCaptureIndex < 0) currentBulkCaptureIndex = captures.length - 1;
       const item = captures[currentBulkCaptureIndex];
-      const posterSrc = item.posterUrl || `/api/poster?type=capture&filename=${encodeURIComponent(item.name)}`;
+      const posterSrc = item.posterUrl || `/api/poster?publicId=${encodeURIComponent(item.public_id)}`;
       bulkCapturePreviewVideo.poster = posterSrc;
       bulkCapturePreviewVideo.src = item.url;
       bulkCapturePreviewVideo.play().catch(() => {});
@@ -1167,7 +1167,7 @@
         img.style.height = '100%';
         img.style.objectFit = 'cover';
         img.loading = 'eager';
-        const posterSrc = item.posterUrl || `/api/poster?type=${type}&filename=${encodeURIComponent(item.name)}`;
+        const posterSrc = item.posterUrl || `/api/poster?publicId=${encodeURIComponent(item.public_id)}`;
         img.src = posterSrc;
         div.appendChild(img);
 
@@ -1282,7 +1282,7 @@
       if (!confirm(`Supprimer "${item.name}" ?`)) return;
 
       try {
-        const res = await fetch(`/api/delete?type=${type}&filename=${encodeURIComponent(item.name)}`, {
+        const res = await fetch(`/api/delete?publicId=${encodeURIComponent(item.public_id)}&resourceType=video`, {
           method: 'DELETE'
         });
         const data = await res.json();
@@ -1631,7 +1631,7 @@
       startProgress();
 
       try {
-        const url = `/api/merge?hook=${encodeURIComponent(hookItem.name)}&capture=${encodeURIComponent(captureItem.name)}`;
+        const url = `/api/merge?hookUrl=${encodeURIComponent(hookItem.url)}&captureUrl=${encodeURIComponent(captureItem.url)}`;
         const res = await fetch(url);
         const data = await res.json();
 
@@ -1730,8 +1730,8 @@
         progressBar.style.width = `${(completed / combinations.length) * 90}%`;
 
         try {
-          let url = `/api/bulk-merge?hook=${encodeURIComponent(combo.hook.name)}&capture=${encodeURIComponent(combo.capture.name)}`;
-          if (combo.musique) url += `&musique=${encodeURIComponent(combo.musique.name)}`;
+          let url = `/api/bulk-merge?hookUrl=${encodeURIComponent(combo.hook.url)}&captureUrl=${encodeURIComponent(combo.capture.url)}`;
+          if (combo.musique) url += `&musiqueUrl=${encodeURIComponent(combo.musique.url)}`;
           if (combo.texte) {
             const texteStr = typeof combo.texte === 'string' ? combo.texte : (combo.texte.text || combo.texte.name || '');
             const textY = document.getElementById('textPositionSlider').value;

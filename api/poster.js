@@ -1,14 +1,9 @@
 import cloudinary from './_cloudinary.js';
 
 export default async function handler(req, res) {
-  const { type, filename } = req.query;
+  const { publicId } = req.query;
 
-  if (!type || !filename) return res.status(400).json({ error: "Paramètres manquants" });
-  if (!["hook", "capture"].includes(type)) return res.status(400).json({ error: "Type invalide" });
-
-  const folder = type === "hook" ? "hooks" : "screenrecordings";
-  const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
-  const publicId = `${folder}/${nameWithoutExt}`;
+  if (!publicId) return res.status(400).json({ error: "Paramètre manquant : publicId" });
 
   const posterUrl = cloudinary.url(publicId, {
     resource_type: 'video',
