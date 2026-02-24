@@ -51,11 +51,12 @@ function createTextOverlay(text, outputPath, positionPercent = 50) {
   const pos = Math.max(0, Math.min(100, Number(positionPercent)));
 
   ctx.font = '500 54px TikTokSans';
+  ctx.letterSpacing = '-1px';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
   // Déterminer la zone selon la position Y estimée
-  const lineHeight = 48;
+  const lineHeight = 70;
   const estimatedHeight = 3 * lineHeight;
   const estimatedRange = safeBottom - safeTop - estimatedHeight;
   const estimatedStartY = safeTop + (estimatedRange * pos / 100);
