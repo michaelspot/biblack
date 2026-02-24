@@ -183,21 +183,30 @@
       border-color: #fff;
     }
 
-    /* Thumbnail strip */
+    /* Thumbnail strip (vertical, left of preview) */
+    .thumb-preview-row {
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+    }
+
     .thumb-strip {
       display: flex;
+      flex-direction: column;
       align-items: center;
       gap: 0;
       position: relative;
+      width: 49px;
+      flex-shrink: 0;
     }
 
     .thumb-arrow {
-      width: 32px;
-      height: 80px;
+      width: 49px;
+      height: 24px;
       background: none;
       border: none;
       color: #666;
-      font-size: 24px;
+      font-size: 16px;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -214,11 +223,13 @@
     .thumb-scroll {
       flex: 1;
       display: flex;
+      flex-direction: column;
       gap: 6px;
-      overflow-x: auto;
+      overflow-y: auto;
+      overflow-x: hidden;
       scrollbar-width: none;
       -ms-overflow-style: none;
-      padding: 4px 0;
+      padding: 0 2px;
     }
 
     .thumb-scroll::-webkit-scrollbar {
@@ -252,9 +263,11 @@
     /* Main preview */
     .preview-container {
       position: relative;
-      margin-top: 8px;
+      margin-top: 0;
       display: flex;
       justify-content: center;
+      flex: 1;
+      min-width: 0;
     }
 
     .main-preview {
@@ -398,7 +411,41 @@
       white-space: pre-line;
       line-height: 1.4;
       text-align: center;
-      min-width: 80px;
+      width: 240px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Slider + Canvas row */
+    .slider-canvas-row {
+      margin-top: 12px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      align-items: stretch;
+    }
+
+    .slider-vertical-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .slider-label {
+      font-size: 11px;
+      color: #aaa;
+    }
+
+    .vertical-slider {
+      writing-mode: vertical-lr;
+      direction: rtl;
+      flex: 1;
+      accent-color: #fff;
+      width: 20px;
     }
 
     .btn-delete {
@@ -718,30 +765,34 @@
       <div id="pageMain" class="page active">
         <div class="section">
           <div class="section-title">Hook</div>
-          <div class="thumb-strip">
-            <button class="thumb-arrow" onclick="navigateHook(-1)">‹</button>
-            <div class="thumb-scroll" id="hookThumbs"></div>
-            <button class="thumb-arrow" onclick="navigateHook(1)">›</button>
-          </div>
-          <div class="preview-container">
-            <button class="btn-delete" onclick="deleteFile('hook')" title="Supprimer"><i data-lucide="trash-2"></i></button>
-            <div class="main-preview" id="hookPreview">
-              <video id="hookPreviewVideo" loop muted playsinline webkit-playsinline preload="metadata" autoplay></video>
+          <div class="thumb-preview-row">
+            <div class="thumb-strip">
+              <button class="thumb-arrow" onclick="navigateHook(-1)">▲</button>
+              <div class="thumb-scroll" id="hookThumbs"></div>
+              <button class="thumb-arrow" onclick="navigateHook(1)">▼</button>
+            </div>
+            <div class="preview-container">
+              <button class="btn-delete" onclick="deleteFile('hook')" title="Supprimer"><i data-lucide="trash-2"></i></button>
+              <div class="main-preview" id="hookPreview">
+                <video id="hookPreviewVideo" loop muted playsinline webkit-playsinline preload="metadata" autoplay></video>
+              </div>
             </div>
           </div>
         </div>
 
         <div class="section">
           <div class="section-title">Screen Recordings</div>
-          <div class="thumb-strip">
-            <button class="thumb-arrow" onclick="navigateCapture(-1)">‹</button>
-            <div class="thumb-scroll" id="captureThumbs"></div>
-            <button class="thumb-arrow" onclick="navigateCapture(1)">›</button>
-          </div>
-          <div class="preview-container">
-            <button class="btn-delete" onclick="deleteFile('capture')" title="Supprimer"><i data-lucide="trash-2"></i></button>
-            <div class="main-preview" id="capturePreview">
-              <video id="capturePreviewVideo" loop muted playsinline webkit-playsinline preload="metadata" autoplay></video>
+          <div class="thumb-preview-row">
+            <div class="thumb-strip">
+              <button class="thumb-arrow" onclick="navigateCapture(-1)">▲</button>
+              <div class="thumb-scroll" id="captureThumbs"></div>
+              <button class="thumb-arrow" onclick="navigateCapture(1)">▼</button>
+            </div>
+            <div class="preview-container">
+              <button class="btn-delete" onclick="deleteFile('capture')" title="Supprimer"><i data-lucide="trash-2"></i></button>
+              <div class="main-preview" id="capturePreview">
+                <video id="capturePreviewVideo" loop muted playsinline webkit-playsinline preload="metadata" autoplay></video>
+              </div>
             </div>
           </div>
         </div>
@@ -759,15 +810,17 @@
             <div class="section-title">Hook</div>
             <button class="btn-select-all" onclick="toggleSelectAll('hooks', bulkHookThumbs, hooks)">Tout sélectionner</button>
           </div>
-          <div class="thumb-strip">
-            <button class="thumb-arrow" onclick="navigateBulkHook(-1)">‹</button>
-            <div class="thumb-scroll" id="bulkHookThumbs"></div>
-            <button class="thumb-arrow" onclick="navigateBulkHook(1)">›</button>
-          </div>
-          <div class="preview-container">
-            <button class="btn-delete" onclick="deleteFile('hook')" title="Supprimer"><i data-lucide="trash-2"></i></button>
-            <div class="main-preview-small" id="bulkHookPreview">
-              <video id="bulkHookPreviewVideo" loop muted playsinline webkit-playsinline preload="metadata" autoplay></video>
+          <div class="thumb-preview-row">
+            <div class="thumb-strip">
+              <button class="thumb-arrow" onclick="navigateBulkHook(-1)">▲</button>
+              <div class="thumb-scroll" id="bulkHookThumbs"></div>
+              <button class="thumb-arrow" onclick="navigateBulkHook(1)">▼</button>
+            </div>
+            <div class="preview-container">
+              <button class="btn-delete" onclick="deleteFile('hook')" title="Supprimer"><i data-lucide="trash-2"></i></button>
+              <div class="main-preview-small" id="bulkHookPreview">
+                <video id="bulkHookPreviewVideo" loop muted playsinline webkit-playsinline preload="metadata" autoplay></video>
+              </div>
             </div>
           </div>
         </div>
@@ -777,15 +830,17 @@
             <div class="section-title">Screen Recordings</div>
             <button class="btn-select-all" onclick="toggleSelectAll('captures', bulkCaptureThumbs, captures)">Tout sélectionner</button>
           </div>
-          <div class="thumb-strip">
-            <button class="thumb-arrow" onclick="navigateBulkCapture(-1)">‹</button>
-            <div class="thumb-scroll" id="bulkCaptureThumbs"></div>
-            <button class="thumb-arrow" onclick="navigateBulkCapture(1)">›</button>
-          </div>
-          <div class="preview-container">
-            <button class="btn-delete" onclick="deleteFile('capture')" title="Supprimer"><i data-lucide="trash-2"></i></button>
-            <div class="main-preview-small" id="bulkCapturePreview">
-              <video id="bulkCapturePreviewVideo" loop muted playsinline webkit-playsinline preload="metadata" autoplay></video>
+          <div class="thumb-preview-row">
+            <div class="thumb-strip">
+              <button class="thumb-arrow" onclick="navigateBulkCapture(-1)">▲</button>
+              <div class="thumb-scroll" id="bulkCaptureThumbs"></div>
+              <button class="thumb-arrow" onclick="navigateBulkCapture(1)">▼</button>
+            </div>
+            <div class="preview-container">
+              <button class="btn-delete" onclick="deleteFile('capture')" title="Supprimer"><i data-lucide="trash-2"></i></button>
+              <div class="main-preview-small" id="bulkCapturePreview">
+                <video id="bulkCapturePreviewVideo" loop muted playsinline webkit-playsinline preload="metadata" autoplay></video>
+              </div>
             </div>
           </div>
         </div>
@@ -804,12 +859,12 @@
             <button class="btn-select-all" onclick="toggleSelectAll('textes', document.getElementById('bulkTexteThumbs'), textes)">Tout sélectionner</button>
           </div>
           <div class="bulk-list" id="bulkTexteThumbs"></div>
-          <div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
-            <span style="font-size:13px;color:#aaa;">Haut</span>
-            <input type="range" id="textPositionSlider" min="0" max="100" value="50" style="flex:1;accent-color:#fff;" oninput="updateTextPreview()">
-            <span style="font-size:13px;color:#aaa;">Bas</span>
-          </div>
-          <div style="margin-top:12px;display:flex;justify-content:center;">
+          <div class="slider-canvas-row">
+            <div class="slider-vertical-wrapper">
+              <span class="slider-label">Haut</span>
+              <input type="range" id="textPositionSlider" min="0" max="100" value="50" class="vertical-slider" oninput="updateTextPreview()">
+              <span class="slider-label">Bas</span>
+            </div>
             <canvas id="textPreviewCanvas" width="216" height="384" style="border-radius:8px;border:1px solid #333;"></canvas>
           </div>
         </div>
@@ -954,7 +1009,7 @@
       });
       const active = container.children[index];
       if (active) {
-        active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        active.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
       }
     }
 
@@ -1011,7 +1066,7 @@
       bulkHookPreviewVideo.src = item.url;
       bulkHookPreviewVideo.play().catch(() => {});
       const thumbEl = bulkHookThumbs.children[currentBulkHookIndex];
-      if (thumbEl) thumbEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      if (thumbEl) thumbEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
     }
 
     function showCurrentBulkCapture() {
@@ -1024,7 +1079,7 @@
       bulkCapturePreviewVideo.src = item.url;
       bulkCapturePreviewVideo.play().catch(() => {});
       const thumbEl = bulkCaptureThumbs.children[currentBulkCaptureIndex];
-      if (thumbEl) thumbEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      if (thumbEl) thumbEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
     }
 
     function navigateBulkHook(dir) {
