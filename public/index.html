@@ -138,7 +138,7 @@
     }
 
     .section {
-      margin-bottom: 24px;
+      margin-bottom: 32px;
     }
 
     .section-title {
@@ -326,6 +326,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      border: 2px solid #000;
     }
 
     .main-preview video {
@@ -344,6 +345,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      border: 2px solid #000;
     }
 
     .main-preview-small video {
@@ -983,7 +985,7 @@
     let progressInterval = null;
     let isGenerating = false;
 
-    const ESTIMATED_TIME = 30;
+    let elapsedSeconds = 0;
 
     // Elements
     const app = document.getElementById('app');
@@ -1672,24 +1674,16 @@
       progressInterval = null;
     }
 
-    function startProgress(duration = ESTIMATED_TIME) {
+    function startProgress() {
       stopTimers();
-      let secondsLeft = duration;
-      let progress = 0;
-
-      timeLeft.textContent = `${secondsLeft}s`;
+      elapsedSeconds = 0;
+      timeLeft.textContent = '0s';
       progressBar.style.width = '0%';
 
       countdownInterval = setInterval(() => {
-        secondsLeft--;
-        if (secondsLeft >= 0) timeLeft.textContent = `${secondsLeft}s`;
+        elapsedSeconds++;
+        timeLeft.textContent = `${elapsedSeconds}s`;
       }, 1000);
-
-      const step = 95 / (duration * 20);
-      progressInterval = setInterval(() => {
-        progress += step;
-        if (progress <= 95) progressBar.style.width = `${progress}%`;
-      }, 50);
     }
 
     function showStatus(text) {
@@ -1851,7 +1845,7 @@
 
         stopTimers();
         progressBar.style.width = '100%';
-        timeLeft.textContent = '0s';
+        timeLeft.textContent = `${elapsedSeconds}s`;
 
         setTimeout(() => {
           status.classList.remove('visible');
