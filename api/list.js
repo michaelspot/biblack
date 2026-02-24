@@ -95,7 +95,11 @@ export default async function handler(req, res) {
       r.public_id.includes('.json') || r.format === 'json'
     );
     if (textFiles.length > 0) {
-      textes = await fetchJson(textFiles[0].secure_url);
+      const rawTextes = await fetchJson(textFiles[0].secure_url);
+      textes = rawTextes.map(t => {
+        if (typeof t === 'string') return { text: t, tags: [] };
+        return { text: t.text || t, tags: t.tag ? [t.tag] : [] };
+      });
     }
 
     console.log(`Final: ${hooks.length} hooks, ${captures.length} captures, ${musiques.length} musiques, ${textes.length} textes`);

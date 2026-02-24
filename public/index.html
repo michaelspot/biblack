@@ -559,6 +559,32 @@
       font-size: 13px;
     }
 
+    .tag-input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #333;
+      border-radius: 6px;
+      background: #111;
+      color: #fff;
+      font-size: 13px;
+      margin-top: 8px;
+      box-sizing: border-box;
+    }
+
+    .texte-input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #333;
+      border-radius: 6px;
+      background: #111;
+      color: #fff;
+      font-size: 13px;
+      margin-top: 8px;
+      box-sizing: border-box;
+      resize: vertical;
+      font-family: inherit;
+    }
+
     /* Desktop button */
     .buttons-desktop {
       margin-top: 24px;
@@ -902,8 +928,10 @@
             <div class="section-title">Texte</div>
             <div class="section-header-actions">
               <button class="btn-select-all" onclick="toggleSelectAll('textes', document.getElementById('bulkTexteThumbs'))">Tout sélectionner</button>
+              <button class="btn-filter" onclick="toggleTagFilter('textes')" title="Filtrer par tags"><i data-lucide="filter"></i></button>
             </div>
           </div>
+          <div class="tag-dropdown" id="tagDropdown-textes"></div>
           <div class="bulk-list" id="bulkTexteThumbs"></div>
           <div class="slider-canvas-row">
             <div class="slider-vertical-wrapper">
@@ -925,20 +953,39 @@
       <div id="pageImport" class="page">
         <div class="section">
           <div class="section-title">Importer un hook</div>
+          <input type="text" class="tag-input" id="hookTagInput" placeholder="Tag (optionnel)">
           <div class="drop-zone" id="hookDropZone" data-type="hook">
             <span class="drop-zone-icon">+</span>
             <div class="drop-zone-text">Ajouter un hook</div>
-            <input type="file" accept="video/*,.mov,.MOV,.mp4,.MP4" style="display:none" id="hookFileInput">
+            <input type="file" style="display:none" id="hookFileInput">
           </div>
         </div>
 
         <div class="section">
           <div class="section-title">Importer un screen recording</div>
+          <input type="text" class="tag-input" id="captureTagInput" placeholder="Tag (optionnel)">
           <div class="drop-zone" id="captureDropZone" data-type="capture">
             <span class="drop-zone-icon">+</span>
             <div class="drop-zone-text">Ajouter une capture</div>
-            <input type="file" accept="video/*,.mov,.MOV,.mp4,.MP4" style="display:none" id="captureFileInput">
+            <input type="file" style="display:none" id="captureFileInput">
           </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Importer une musique</div>
+          <input type="text" class="tag-input" id="musiqueTagInput" placeholder="Tag (optionnel)">
+          <div class="drop-zone" id="musiqueDropZone" data-type="musique">
+            <span class="drop-zone-icon">+</span>
+            <div class="drop-zone-text">Ajouter une musique</div>
+            <input type="file" style="display:none" id="musiqueFileInput">
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Ajouter un texte</div>
+          <input type="text" class="tag-input" id="texteTagInput" placeholder="Tag (optionnel)">
+          <textarea class="texte-input" id="texteInput" placeholder="Saisir le texte..." rows="3"></textarea>
+          <button class="btn btn-primary" style="margin-top:8px" onclick="addTexte()">Ajouter le texte</button>
         </div>
       </div>
 
@@ -980,7 +1027,7 @@
     let currentBulkHookIndex = 0;
     let currentBulkCaptureIndex = 0;
     let bulkSelected = { hooks: new Set(), captures: new Set(), musiques: new Set(), textes: new Set() };
-    let activeTagFilters = { hooks: new Set(), captures: new Set(), musiques: new Set() };
+    let activeTagFilters = { hooks: new Set(), captures: new Set(), musiques: new Set(), textes: new Set() };
     let countdownInterval = null;
     let progressInterval = null;
     let isGenerating = false;
@@ -1261,6 +1308,7 @@
       if (section === 'hooks') return hooks;
       if (section === 'captures') return captures;
       if (section === 'musiques') return musiques;
+      if (section === 'textes') return textes;
       return [];
     }
 
@@ -1348,6 +1396,8 @@
         }, filtered.map(f => f.originalIndex));
       } else if (section === 'musiques') {
         buildBulkMusique(document.getElementById('bulkMusiqueThumbs'), filtered.map(f => f.item), selectedSet, filtered.map(f => f.originalIndex));
+      } else if (section === 'textes') {
+        buildBulkTexte(document.getElementById('bulkTexteThumbs'), filtered.map(f => f.item), selectedSet);
       }
 
       // Update le bouton select-all
@@ -1541,7 +1591,7 @@
         currentBulkHookIndex = 0;
         currentBulkCaptureIndex = 0;
         bulkSelected = { hooks: new Set(), captures: new Set(), musiques: new Set(), textes: new Set() };
-        activeTagFilters = { hooks: new Set(), captures: new Set(), musiques: new Set() };
+        activeTagFilters = { hooks: new Set(), captures: new Set(), musiques: new Set(), textes: new Set() };
 
         // Build thumbnails (non-blocking, frames load in background)
         buildThumbs(hookThumbs, hooks, 'hook');
@@ -1640,6 +1690,7 @@
 
     async function uploadFile(file, type) {
       const dropZone = document.getElementById(`${type}DropZone`);
+      const tagInput = document.getElementById(`${type}TagInput`);
       const originalText = dropZone.innerHTML;
       dropZone.innerHTML = '<span class="drop-zone-icon">...</span><div class="drop-zone-text">Upload en cours</div>';
 
@@ -1647,6 +1698,8 @@
         const formData = new FormData();
         formData.append('file', file);
         formData.append('type', type);
+        const tag = tagInput ? tagInput.value.trim() : '';
+        if (tag) formData.append('tag', tag);
 
         const res = await fetch('/api/upload', {
           method: 'POST',
@@ -1657,18 +1710,45 @@
 
         await loadFiles();
         dropZone.innerHTML = originalText;
-        showMainPage();
         if (type === 'hook') {
+          showMainPage();
           const idx = hooks.findIndex(h => h.name === file.name);
           if (idx >= 0) currentHookIndex = idx;
           showCurrentHook();
-        } else {
+        } else if (type === 'capture') {
+          showMainPage();
           const idx = captures.findIndex(c => c.name === file.name);
           if (idx >= 0) currentCaptureIndex = idx;
           showCurrentCapture();
         }
       } catch (err) {
         dropZone.innerHTML = originalText;
+        showError(err.message);
+      }
+    }
+
+    async function addTexte() {
+      const input = document.getElementById('texteInput');
+      const tagInput = document.getElementById('texteTagInput');
+      const text = input.value.trim();
+      if (!text) return showError('Saisis un texte.');
+
+      try {
+        const body = { text };
+        const tag = tagInput.value.trim();
+        if (tag) body.tag = tag;
+
+        const res = await fetch('/api/add-text', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        input.value = '';
+        await loadFiles();
+      } catch (err) {
         showError(err.message);
       }
     }
@@ -1683,6 +1763,12 @@
       document.getElementById('captureDropZone'),
       document.getElementById('captureFileInput'),
       'capture'
+    );
+
+    setupDropZone(
+      document.getElementById('musiqueDropZone'),
+      document.getElementById('musiqueFileInput'),
+      'musique'
     );
 
     // Progress
