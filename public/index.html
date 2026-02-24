@@ -1886,11 +1886,10 @@
     }
 
     function updateBulkButton() {
-      const ready = bulkSelected.hooks.size > 0 && bulkSelected.captures.size > 0 && bulkSelected.musiques.size > 0 && bulkSelected.textes.size > 0;
       bulkBtns.forEach(btn => {
         if (!btn) return;
-        btn.disabled = !ready;
-        btn.textContent = ready ? 'Bulk Générer' : 'Sélectionne 1 élément par section';
+        btn.disabled = false;
+        btn.textContent = 'Bulk Générer';
       });
     }
 
@@ -1899,15 +1898,10 @@
     }
 
     async function bulkGenerate() {
-      const selHooks = [...bulkSelected.hooks].map(i => hooks[i]);
-      const selCaptures = [...bulkSelected.captures].map(i => captures[i]);
-      const selMusiques = [...bulkSelected.musiques].map(i => musiques[i]);
-      const selTextes = [...bulkSelected.textes].map(i => textes[i]);
-
-      if (selHooks.length === 0 || selCaptures.length === 0 || selMusiques.length === 0 || selTextes.length === 0) {
-        showError('Sélectionne au moins 1 élément dans chaque section.');
-        return;
-      }
+      const selHooks = bulkSelected.hooks.size > 0 ? [...bulkSelected.hooks].map(i => hooks[i]) : [...hooks];
+      const selCaptures = bulkSelected.captures.size > 0 ? [...bulkSelected.captures].map(i => captures[i]) : [...captures];
+      const selMusiques = bulkSelected.musiques.size > 0 ? [...bulkSelected.musiques].map(i => musiques[i]) : [...musiques];
+      const selTextes = bulkSelected.textes.size > 0 ? [...bulkSelected.textes].map(i => textes[i]) : [...textes];
 
       // Demander combien de vidéos
       const maxPossible = selHooks.length * selCaptures.length;
