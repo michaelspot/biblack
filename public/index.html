@@ -199,52 +199,24 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0;
-      position: relative;
-      width: 49px;
-      flex-shrink: 0;
-    }
-
-    .thumb-arrow {
-      width: 49px;
-      height: 24px;
-      background: none;
-      border: none;
-      color: #666;
-      font-size: 16px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      z-index: 2;
-      transition: color 0.2s;
-    }
-
-    .thumb-arrow:hover {
-      color: #fff;
-    }
-
-    .thumb-scroll {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
       gap: 6px;
+      position: relative;
+      width: 64px;
+      flex-shrink: 0;
       overflow-y: auto;
       overflow-x: hidden;
       scrollbar-width: none;
       -ms-overflow-style: none;
-      padding: 0 2px;
     }
 
-    .thumb-scroll::-webkit-scrollbar {
+    .thumb-strip::-webkit-scrollbar {
       display: none;
     }
 
     .thumb-item {
       position: relative;
-      width: 45px;
-      height: 80px;
+      width: 60px;
+      height: 107px;
       border-radius: 6px;
       overflow: hidden;
       flex-shrink: 0;
@@ -447,7 +419,6 @@
 
     .vertical-slider {
       writing-mode: vertical-lr;
-      direction: rtl;
       flex: 1;
       accent-color: #fff;
       width: 20px;
@@ -771,11 +742,7 @@
         <div class="section">
           <div class="section-title">Hook</div>
           <div class="thumb-preview-row">
-            <div class="thumb-strip">
-              <button class="thumb-arrow" onclick="navigateHook(-1)">▲</button>
-              <div class="thumb-scroll" id="hookThumbs"></div>
-              <button class="thumb-arrow" onclick="navigateHook(1)">▼</button>
-            </div>
+            <div class="thumb-strip" id="hookThumbs"></div>
             <div class="preview-container">
               <button class="btn-delete" onclick="deleteFile('hook')" title="Supprimer"><i data-lucide="trash-2"></i></button>
               <div class="main-preview" id="hookPreview">
@@ -788,11 +755,7 @@
         <div class="section">
           <div class="section-title">Screen Recordings</div>
           <div class="thumb-preview-row">
-            <div class="thumb-strip">
-              <button class="thumb-arrow" onclick="navigateCapture(-1)">▲</button>
-              <div class="thumb-scroll" id="captureThumbs"></div>
-              <button class="thumb-arrow" onclick="navigateCapture(1)">▼</button>
-            </div>
+            <div class="thumb-strip" id="captureThumbs"></div>
             <div class="preview-container">
               <button class="btn-delete" onclick="deleteFile('capture')" title="Supprimer"><i data-lucide="trash-2"></i></button>
               <div class="main-preview" id="capturePreview">
@@ -816,11 +779,7 @@
             <button class="btn-select-all" onclick="toggleSelectAll('hooks', bulkHookThumbs, hooks)">Tout sélectionner</button>
           </div>
           <div class="thumb-preview-row">
-            <div class="thumb-strip">
-              <button class="thumb-arrow" onclick="navigateBulkHook(-1)">▲</button>
-              <div class="thumb-scroll" id="bulkHookThumbs"></div>
-              <button class="thumb-arrow" onclick="navigateBulkHook(1)">▼</button>
-            </div>
+            <div class="thumb-strip" id="bulkHookThumbs"></div>
             <div class="preview-container">
               <button class="btn-delete" onclick="deleteFile('hook')" title="Supprimer"><i data-lucide="trash-2"></i></button>
               <div class="main-preview-small" id="bulkHookPreview">
@@ -836,11 +795,7 @@
             <button class="btn-select-all" onclick="toggleSelectAll('captures', bulkCaptureThumbs, captures)">Tout sélectionner</button>
           </div>
           <div class="thumb-preview-row">
-            <div class="thumb-strip">
-              <button class="thumb-arrow" onclick="navigateBulkCapture(-1)">▲</button>
-              <div class="thumb-scroll" id="bulkCaptureThumbs"></div>
-              <button class="thumb-arrow" onclick="navigateBulkCapture(1)">▼</button>
-            </div>
+            <div class="thumb-strip" id="bulkCaptureThumbs"></div>
             <div class="preview-container">
               <button class="btn-delete" onclick="deleteFile('capture')" title="Supprimer"><i data-lucide="trash-2"></i></button>
               <div class="main-preview-small" id="bulkCapturePreview">
