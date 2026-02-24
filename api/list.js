@@ -14,95 +14,87 @@ function fetchJson(url) {
   });
 }
 
-async function listResources(folder, resourceType) {
+async function searchFolder(folder) {
   try {
-    const result = await cloudinary.api.resources({
-      type: 'upload',
-      resource_type: resourceType,
-      asset_folder: folder,
-      max_results: 500,
-    });
+    const result = await cloudinary.search
+      .expression(`asset_folder="${folder}"`)
+      .sort_by('created_at', 'desc')
+      .max_results(500)
+      .execute();
     return result.resources || [];
   } catch (e) {
-    console.log(`No ${resourceType} resources found for folder "${folder}":`, e.message);
+    console.log(`Search error for folder "${folder}":`, e.message);
     return [];
   }
 }
 
 export default async function handler(req, res) {
   try {
-    // Lancer toutes les requêtes en parallèle
-    // Musiques peuvent être video ou raw selon comment elles ont été uploadées
-    // Textes peuvent être raw ou image selon Cloudinary
-    const [
-      hooksVideo,
-      capturesVideo,
-      musicsVideo,
-      musicsRaw,
-      textsRaw,
-      textsImage,
-    ] = await Promise.all([
-      listResources('hooks', 'video'),
-      listResources('screenrecordings', 'video'),
-      listResources('musics', 'video'),
-      listResources('musics', 'raw'),
-      listResources('texts', 'raw'),
-      listResources('texts', 'image'),
+    // Search API : 1 requête par dossier, filtrage resource_type côté code
+    const [hooksAll, capturesAll, musicsAll, textsAll] = await Promise.all([
+      searchFolder('hooks'),
+      searchFolder('screenrecordings'),
+      searchFolder('musics'),
+      searchFolder('texts'),
     ]);
 
-    const hooks = hooksVideo.map(r => ({
-      name: (r.display_name || r.public_id.replace(/^.*\//, '')) + '.' + r.format,
-      url: r.secure_url,
-      posterUrl: cloudinary.url(r.public_id, {
-        resource_type: 'video',
-        format: 'jpg',
-        transformation: [{ width: 320, crop: 'scale' }],
-        secure: true,
-      }),
-      size: r.bytes,
-      lastModified: r.created_at,
-      public_id: r.public_id,
-    })).sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+    console.log(`Search results: hooks=${hooksAll.length}, screenrecordings=${capturesAll.length}, musics=${musicsAll.length}, texts=${textsAll.length}`);
+    if (hooksAll.length > 0) console.log('Hook sample:', hooksAll[0].public_id, hooksAll[0].asset_folder, hooksAll[0].resource_type);
+    if (capturesAll.length > 0) console.log('Capture sample:', capturesAll[0].public_id, capturesAll[0].asset_folder, capturesAll[0].resource_type);
+    if (musicsAll.length > 0) console.log('Music sample:', musicsAll[0].public_id, musicsAll[0].asset_folder, musicsAll[0].resource_type);
+    if (textsAll.length > 0) console.log('Text sample:', textsAll[0].public_id, textsAll[0].asset_folder, textsAll[0].resource_type);
 
-    const captures = capturesVideo.map(r => ({
-      name: (r.display_name || r.public_id.replace(/^.*\//, '')) + '.' + r.format,
-      url: r.secure_url,
-      posterUrl: cloudinary.url(r.public_id, {
-        resource_type: 'video',
-        format: 'jpg',
-        transformation: [{ width: 320, crop: 'scale' }],
-        secure: true,
-      }),
-      size: r.bytes,
-      lastModified: r.created_at,
-      public_id: r.public_id,
-    })).sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+    const hooks = hooksAll
+      .filter(r => r.resource_type === 'video')
+      .map(r => ({
+        name: (r.display_name || r.public_id.replace(/^.*\//, '')) + '.' + r.format,
+        url: r.secure_url,
+        posterUrl: cloudinary.url(r.public_id, {
+          resource_type: 'video',
+          format: 'jpg',
+          transformation: [{ width: 320, crop: 'scale' }],
+          secure: true,
+        }),
+        size: r.bytes,
+        lastModified: r.created_at,
+        public_id: r.public_id,
+      }));
 
-    // Combiner musiques video + raw
-    const allMusics = [...musicsVideo, ...musicsRaw];
-    const musiques = allMusics.map(r => ({
+    const captures = capturesAll
+      .filter(r => r.resource_type === 'video')
+      .map(r => ({
+        name: (r.display_name || r.public_id.replace(/^.*\//, '')) + '.' + r.format,
+        url: r.secure_url,
+        posterUrl: cloudinary.url(r.public_id, {
+          resource_type: 'video',
+          format: 'jpg',
+          transformation: [{ width: 320, crop: 'scale' }],
+          secure: true,
+        }),
+        size: r.bytes,
+        lastModified: r.created_at,
+        public_id: r.public_id,
+      }));
+
+    const musiques = musicsAll.map(r => ({
       name: (r.display_name || r.public_id.replace(/^.*\//, '')) + '.' + r.format,
       url: r.secure_url,
       size: r.bytes,
       lastModified: r.created_at,
       public_id: r.public_id,
       resource_type: r.resource_type,
-    })).sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+    }));
 
-    // Combiner textes raw + image
+    // Textes : chercher le fichier JSON
     let textes = [];
-    const allTexts = [...textsRaw, ...textsImage];
-    const textFiles = allTexts.filter(r =>
+    const textFiles = textsAll.filter(r =>
       r.public_id.includes('.json') || r.format === 'json'
     );
     if (textFiles.length > 0) {
       textes = await fetchJson(textFiles[0].secure_url);
     }
 
-    console.log(`List: ${hooks.length} hooks, ${captures.length} captures, ${musiques.length} musiques, ${textes.length} textes`);
-    console.log('All resources:', { hooksVideo: hooksVideo.length, capturesVideo: capturesVideo.length, musicsVideo: musicsVideo.length, musicsRaw: musicsRaw.length, textsRaw: textsRaw.length, textsImage: textsImage.length });
-    if (hooksVideo.length > 0) console.log('Hook sample:', hooksVideo[0].public_id, hooksVideo[0].asset_folder);
-    if (capturesVideo.length > 0) console.log('Capture sample:', capturesVideo[0].public_id, capturesVideo[0].asset_folder);
+    console.log(`Final: ${hooks.length} hooks, ${captures.length} captures, ${musiques.length} musiques, ${textes.length} textes`);
 
     res.status(200).json({ hooks, captures, musiques, textes });
   } catch (error) {
