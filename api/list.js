@@ -18,6 +18,7 @@ async function searchFolder(folder) {
   try {
     const result = await cloudinary.search
       .expression(`asset_folder="${folder}"`)
+      .with_field('tags')
       .sort_by('created_at', 'desc')
       .max_results(500)
       .execute();
@@ -58,6 +59,7 @@ export default async function handler(req, res) {
         size: r.bytes,
         lastModified: r.created_at,
         public_id: r.public_id,
+        tags: r.tags || [],
       }));
 
     const captures = capturesAll
@@ -74,6 +76,7 @@ export default async function handler(req, res) {
         size: r.bytes,
         lastModified: r.created_at,
         public_id: r.public_id,
+        tags: r.tags || [],
       }));
 
     const musiques = musicsAll.map(r => ({
@@ -83,6 +86,7 @@ export default async function handler(req, res) {
       lastModified: r.created_at,
       public_id: r.public_id,
       resource_type: r.resource_type,
+      tags: r.tags || [],
     }));
 
     // Textes : chercher le fichier JSON

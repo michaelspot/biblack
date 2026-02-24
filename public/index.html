@@ -142,7 +142,7 @@
     }
 
     .section-title {
-      font-size: 11px;
+      font-size: 14px;
       font-weight: 500;
       text-transform: uppercase;
       letter-spacing: 1px;
@@ -161,13 +161,19 @@
       margin-bottom: 0;
     }
 
+    .section-header-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
     .btn-select-all {
       background: none;
       border: 1px solid #333;
       border-radius: 6px;
       color: #666;
-      font-size: 11px;
-      padding: 4px 10px;
+      font-size: 13px;
+      padding: 6px 14px;
       cursor: pointer;
       transition: all 0.2s;
     }
@@ -178,6 +184,70 @@
     }
 
     .btn-select-all.all-selected {
+      background: #fff;
+      color: #000;
+      border-color: #fff;
+    }
+
+    .btn-filter {
+      background: none;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #666;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      padding: 0;
+    }
+
+    .btn-filter:hover {
+      border-color: #555;
+      color: #fff;
+    }
+
+    .btn-filter.active {
+      background: #fff;
+      color: #000;
+      border-color: #fff;
+    }
+
+    .btn-filter svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .tag-dropdown {
+      display: none;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px 0;
+    }
+
+    .tag-dropdown.open {
+      display: flex;
+    }
+
+    .tag-option {
+      background: #222;
+      border: 1px solid #333;
+      border-radius: 20px;
+      color: #888;
+      font-size: 12px;
+      padding: 4px 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tag-option:hover {
+      border-color: #555;
+      color: #fff;
+    }
+
+    .tag-option.active {
       background: #fff;
       color: #000;
       border-color: #fff;
@@ -776,8 +846,12 @@
         <div class="section">
           <div class="section-header">
             <div class="section-title">Hook</div>
-            <button class="btn-select-all" onclick="toggleSelectAll('hooks', bulkHookThumbs, hooks)">Tout sélectionner</button>
+            <div class="section-header-actions">
+              <button class="btn-select-all" onclick="toggleSelectAll('hooks', bulkHookThumbs)">Tout sélectionner</button>
+              <button class="btn-filter" onclick="toggleTagFilter('hooks')" title="Filtrer par tags"><i data-lucide="filter"></i></button>
+            </div>
           </div>
+          <div class="tag-dropdown" id="tagDropdown-hooks"></div>
           <div class="thumb-preview-row">
             <div class="thumb-strip" id="bulkHookThumbs"></div>
             <div class="preview-container">
@@ -792,8 +866,12 @@
         <div class="section">
           <div class="section-header">
             <div class="section-title">Screen Recordings</div>
-            <button class="btn-select-all" onclick="toggleSelectAll('captures', bulkCaptureThumbs, captures)">Tout sélectionner</button>
+            <div class="section-header-actions">
+              <button class="btn-select-all" onclick="toggleSelectAll('captures', bulkCaptureThumbs)">Tout sélectionner</button>
+              <button class="btn-filter" onclick="toggleTagFilter('captures')" title="Filtrer par tags"><i data-lucide="filter"></i></button>
+            </div>
           </div>
+          <div class="tag-dropdown" id="tagDropdown-captures"></div>
           <div class="thumb-preview-row">
             <div class="thumb-strip" id="bulkCaptureThumbs"></div>
             <div class="preview-container">
@@ -808,15 +886,21 @@
         <div class="section">
           <div class="section-header">
             <div class="section-title">Musique</div>
-            <button class="btn-select-all" onclick="toggleSelectAll('musiques', document.getElementById('bulkMusiqueThumbs'), musiques)">Tout sélectionner</button>
+            <div class="section-header-actions">
+              <button class="btn-select-all" onclick="toggleSelectAll('musiques', document.getElementById('bulkMusiqueThumbs'))">Tout sélectionner</button>
+              <button class="btn-filter" onclick="toggleTagFilter('musiques')" title="Filtrer par tags"><i data-lucide="filter"></i></button>
+            </div>
           </div>
+          <div class="tag-dropdown" id="tagDropdown-musiques"></div>
           <div class="bulk-list" id="bulkMusiqueThumbs"></div>
         </div>
 
         <div class="section">
           <div class="section-header">
             <div class="section-title">Texte</div>
-            <button class="btn-select-all" onclick="toggleSelectAll('textes', document.getElementById('bulkTexteThumbs'), textes)">Tout sélectionner</button>
+            <div class="section-header-actions">
+              <button class="btn-select-all" onclick="toggleSelectAll('textes', document.getElementById('bulkTexteThumbs'))">Tout sélectionner</button>
+            </div>
           </div>
           <div class="bulk-list" id="bulkTexteThumbs"></div>
           <div class="slider-canvas-row">
@@ -894,6 +978,7 @@
     let currentBulkHookIndex = 0;
     let currentBulkCaptureIndex = 0;
     let bulkSelected = { hooks: new Set(), captures: new Set(), musiques: new Set(), textes: new Set() };
+    let activeTagFilters = { hooks: new Set(), captures: new Set(), musiques: new Set() };
     let countdownInterval = null;
     let progressInterval = null;
     let isGenerating = false;
@@ -1151,16 +1236,121 @@
       ctx.stroke();
     }
 
-    function toggleSelectAll(key, container, items) {
+    function getAllItems(section) {
+      if (section === 'hooks') return hooks;
+      if (section === 'captures') return captures;
+      if (section === 'musiques') return musiques;
+      return [];
+    }
+
+    function getFilteredItems(section) {
+      const items = getAllItems(section);
+      const filters = activeTagFilters[section];
+      if (!filters || filters.size === 0) return items.map((item, i) => ({ item, originalIndex: i }));
+      return items.map((item, i) => ({ item, originalIndex: i }))
+        .filter(({ item }) => item.tags && item.tags.some(t => filters.has(t)));
+    }
+
+    function toggleTagFilter(section) {
+      const dropdown = document.getElementById(`tagDropdown-${section}`);
+      const btn = event.currentTarget;
+      const isOpen = dropdown.classList.contains('open');
+
+      // Fermer tous les autres dropdowns
+      document.querySelectorAll('.tag-dropdown').forEach(d => d.classList.remove('open'));
+      document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+
+      if (isOpen) return;
+
+      // Collecter les tags uniques
+      const items = getAllItems(section);
+      const tagSet = new Set();
+      items.forEach(item => {
+        if (item.tags) item.tags.forEach(t => tagSet.add(t));
+      });
+      const tags = [...tagSet].sort();
+
+      if (tags.length === 0) {
+        dropdown.innerHTML = '<span style="color:#555;font-size:12px;">Aucun tag</span>';
+        dropdown.classList.add('open');
+        btn.classList.add('active');
+        return;
+      }
+
+      dropdown.innerHTML = '';
+      const activeTags = activeTagFilters[section];
+      for (const tag of tags) {
+        const tagEl = document.createElement('span');
+        tagEl.className = 'tag-option' + (activeTags.has(tag) ? ' active' : '');
+        tagEl.textContent = tag;
+        tagEl.addEventListener('click', () => toggleTag(section, tag));
+        dropdown.appendChild(tagEl);
+      }
+
+      dropdown.classList.add('open');
+      btn.classList.add('active');
+    }
+
+    function toggleTag(section, tag) {
+      const filters = activeTagFilters[section];
+      if (filters.has(tag)) {
+        filters.delete(tag);
+      } else {
+        filters.add(tag);
+      }
+
+      // Mettre à jour l'apparence des tags
+      const dropdown = document.getElementById(`tagDropdown-${section}`);
+      dropdown.querySelectorAll('.tag-option').forEach(el => {
+        el.classList.toggle('active', filters.has(el.textContent));
+      });
+
+      // Reset la sélection et rebuild
+      bulkSelected[section].clear();
+      rebuildFilteredSection(section);
+      updateBulkButton();
+    }
+
+    function rebuildFilteredSection(section) {
+      const filtered = getFilteredItems(section);
+      const selectedSet = bulkSelected[section];
+
+      if (section === 'hooks') {
+        buildBulkThumbs(bulkHookThumbs, filtered.map(f => f.item), 'hook', selectedSet, (i) => {
+          currentBulkHookIndex = filtered[i].originalIndex;
+          showCurrentBulkHook();
+        }, filtered.map(f => f.originalIndex));
+      } else if (section === 'captures') {
+        buildBulkThumbs(bulkCaptureThumbs, filtered.map(f => f.item), 'capture', selectedSet, (i) => {
+          currentBulkCaptureIndex = filtered[i].originalIndex;
+          showCurrentBulkCapture();
+        }, filtered.map(f => f.originalIndex));
+      } else if (section === 'musiques') {
+        buildBulkMusique(document.getElementById('bulkMusiqueThumbs'), filtered.map(f => f.item), selectedSet, filtered.map(f => f.originalIndex));
+      }
+
+      // Update le bouton select-all
+      const header = document.getElementById(`tagDropdown-${section}`).closest('.section').querySelector('.btn-select-all');
+      if (header) {
+        header.classList.remove('all-selected');
+        header.textContent = 'Tout sélectionner';
+      }
+    }
+
+    function toggleSelectAll(key, container) {
+      const filtered = getFilteredItems(key);
+      const originalIndices = filtered.map(f => f.originalIndex);
       const selectedSet = bulkSelected[key];
-      const allSelected = selectedSet.size === items.length;
-      selectedSet.clear();
-      if (!allSelected) {
-        for (let i = 0; i < items.length; i++) selectedSet.add(i);
+      const allSelected = originalIndices.every(idx => selectedSet.has(idx));
+      if (allSelected) {
+        originalIndices.forEach(idx => selectedSet.delete(idx));
+      } else {
+        originalIndices.forEach(idx => selectedSet.add(idx));
       }
       // Update all checkmarks in container
       container.querySelectorAll('.thumb-check').forEach((check, i) => {
-        check.style.display = selectedSet.has(i) ? 'flex' : 'none';
+        const origIdx = originalIndices[i] !== undefined ? originalIndices[i] : i;
+        check.style.display = selectedSet.has(origIdx) ? 'flex' : 'none';
       });
       // Update button state
       const btn = event.currentTarget;
@@ -1169,13 +1359,14 @@
       updateBulkButton();
     }
 
-    function buildBulkThumbs(container, items, type, selectedSet, onClickItem) {
+    function buildBulkThumbs(container, items, type, selectedSet, onClickItem, originalIndices) {
       container.innerHTML = '';
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
+        const origIdx = originalIndices ? originalIndices[i] : i;
         const div = document.createElement('div');
         div.className = 'thumb-item';
-        div.dataset.index = i;
+        div.dataset.index = origIdx;
 
         const img = document.createElement('img');
         img.style.width = '100%';
@@ -1189,15 +1380,16 @@
         const check = document.createElement('div');
         check.className = 'thumb-check';
         check.textContent = '✓';
+        check.style.display = selectedSet.has(origIdx) ? 'flex' : 'none';
         div.appendChild(check);
 
         div.addEventListener('click', () => {
-          if (selectedSet.has(i)) {
-            selectedSet.delete(i);
+          if (selectedSet.has(origIdx)) {
+            selectedSet.delete(origIdx);
           } else {
-            selectedSet.add(i);
+            selectedSet.add(origIdx);
           }
-          check.style.display = selectedSet.has(i) ? 'flex' : 'none';
+          check.style.display = selectedSet.has(origIdx) ? 'flex' : 'none';
           updateBulkButton();
           if (onClickItem) onClickItem(i);
         });
@@ -1209,13 +1401,14 @@
     let currentAudio = null;
     let currentMusicItem = null;
 
-    function buildBulkMusique(container, items, selectedSet) {
+    function buildBulkMusique(container, items, selectedSet, originalIndices) {
       container.innerHTML = '';
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
+        const origIdx = originalIndices ? originalIndices[i] : i;
         const div = document.createElement('div');
         div.className = 'bulk-music-item';
-        div.dataset.index = i;
+        div.dataset.index = origIdx;
 
         const playBtn = document.createElement('div');
         playBtn.className = 'play-btn';
@@ -1224,12 +1417,13 @@
         const check = document.createElement('div');
         check.className = 'thumb-check';
         check.textContent = '✓';
+        check.style.display = selectedSet.has(origIdx) ? 'flex' : 'none';
         div.appendChild(check);
 
         div.addEventListener('click', (e) => {
           // Toggle sélection
-          if (selectedSet.has(i)) { selectedSet.delete(i); } else { selectedSet.add(i); }
-          check.style.display = selectedSet.has(i) ? 'flex' : 'none';
+          if (selectedSet.has(origIdx)) { selectedSet.delete(origIdx); } else { selectedSet.add(origIdx); }
+          check.style.display = selectedSet.has(origIdx) ? 'flex' : 'none';
           updateBulkButton();
         });
 
@@ -1326,6 +1520,7 @@
         currentBulkHookIndex = 0;
         currentBulkCaptureIndex = 0;
         bulkSelected = { hooks: new Set(), captures: new Set(), musiques: new Set(), textes: new Set() };
+        activeTagFilters = { hooks: new Set(), captures: new Set(), musiques: new Set() };
 
         // Build thumbnails (non-blocking, frames load in background)
         buildThumbs(hookThumbs, hooks, 'hook');
@@ -1338,6 +1533,7 @@
         buildBulkTexte(document.getElementById('bulkTexteThumbs'), textes, bulkSelected.textes);
         updateTextPreview();
         updateBulkButton();
+        lucide.createIcons();
 
         // Show app immediately, don't wait for videos
         loading.classList.add('hidden');
