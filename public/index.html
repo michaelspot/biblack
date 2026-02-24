@@ -1900,8 +1900,8 @@
     async function bulkGenerate() {
       const selHooks = bulkSelected.hooks.size > 0 ? [...bulkSelected.hooks].map(i => hooks[i]) : [...hooks];
       const selCaptures = bulkSelected.captures.size > 0 ? [...bulkSelected.captures].map(i => captures[i]) : [...captures];
-      const selMusiques = bulkSelected.musiques.size > 0 ? [...bulkSelected.musiques].map(i => musiques[i]) : [...musiques];
-      const selTextes = bulkSelected.textes.size > 0 ? [...bulkSelected.textes].map(i => textes[i]) : [...textes];
+      const selMusiques = bulkSelected.musiques.size > 0 ? [...bulkSelected.musiques].map(i => musiques[i]) : [];
+      const selTextes = bulkSelected.textes.size > 0 ? [...bulkSelected.textes].map(i => textes[i]) : [];
 
       // Demander combien de vidéos
       const maxPossible = selHooks.length * selCaptures.length;
