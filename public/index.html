@@ -1050,13 +1050,18 @@
       }
     }
 
+    function scrollThumbIntoView(container, el) {
+      const top = el.offsetTop - container.offsetTop - container.clientHeight / 2 + el.offsetHeight / 2;
+      container.scrollTo({ top, behavior: 'smooth' });
+    }
+
     function highlightThumb(container, index) {
       container.querySelectorAll('.thumb-item').forEach((el, i) => {
         el.classList.toggle('active', i === index);
       });
       const active = container.children[index];
       if (active) {
-        active.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        scrollThumbIntoView(container, active);
       }
     }
 
@@ -1113,7 +1118,7 @@
       bulkHookPreviewVideo.src = item.url;
       bulkHookPreviewVideo.play().catch(() => {});
       const thumbEl = bulkHookThumbs.children[currentBulkHookIndex];
-      if (thumbEl) thumbEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      if (thumbEl) scrollThumbIntoView(bulkHookThumbs, thumbEl);
     }
 
     function showCurrentBulkCapture() {
@@ -1126,7 +1131,7 @@
       bulkCapturePreviewVideo.src = item.url;
       bulkCapturePreviewVideo.play().catch(() => {});
       const thumbEl = bulkCaptureThumbs.children[currentBulkCaptureIndex];
-      if (thumbEl) thumbEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      if (thumbEl) scrollThumbIntoView(bulkCaptureThumbs, thumbEl);
     }
 
     function navigateBulkHook(dir) {
