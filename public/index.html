@@ -1174,9 +1174,9 @@
       const narrowStart = h * 0.45;
       const fontSize = Math.round(54 * scale);
       const lineHeight = Math.round(70 * scale);
+      const letterSp = -1.5 * scale;
 
       ctx.font = `500 ${fontSize}px sans-serif`;
-      ctx.letterSpacing = `${Math.round(-1 * scale)}px`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
@@ -1217,15 +1217,28 @@
       const availableRange = safeBottom - safeTop - totalHeight;
       const startY = safeTop + (availableRange * pos / 100) + lineHeight / 2;
 
+      function drawSpaced(text, x, y, method) {
+        const chars = [...text];
+        const totalW = ctx.measureText(text).width + letterSp * (chars.length - 1);
+        let curX = x - totalW / 2;
+        ctx.textAlign = 'left';
+        for (const ch of chars) {
+          if (method === 'stroke') ctx.strokeText(ch, curX, y);
+          else ctx.fillText(ch, curX, y);
+          curX += ctx.measureText(ch).width + letterSp;
+        }
+        ctx.textAlign = 'center';
+      }
+
       ctx.strokeStyle = 'black';
       ctx.lineWidth = Math.round(8 * scale);
       ctx.lineJoin = 'round';
       for (let i = 0; i < displayLines.length; i++) {
-        ctx.strokeText(displayLines[i], centerX, startY + i * lineHeight);
+        drawSpaced(displayLines[i], centerX, startY + i * lineHeight, 'stroke');
       }
       ctx.fillStyle = 'white';
       for (let i = 0; i < displayLines.length; i++) {
-        ctx.fillText(displayLines[i], centerX, startY + i * lineHeight);
+        drawSpaced(displayLines[i], centerX, startY + i * lineHeight, 'fill');
       }
 
       // Indicateurs de largeur safe zone (lignes fines verticales)

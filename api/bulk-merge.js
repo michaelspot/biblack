@@ -36,6 +36,19 @@ function stripEmojis(text) {
   return text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').replace(/\s+/g, ' ').trim();
 }
 
+function drawTextSpaced(ctx, text, x, y, spacing, method) {
+  const chars = [...text];
+  const totalWidth = ctx.measureText(text).width + spacing * (chars.length - 1);
+  let curX = x - totalWidth / 2;
+  ctx.textAlign = 'left';
+  for (const ch of chars) {
+    if (method === 'stroke') ctx.strokeText(ch, curX, y);
+    else ctx.fillText(ch, curX, y);
+    curX += ctx.measureText(ch).width + spacing;
+  }
+  ctx.textAlign = 'center';
+}
+
 function createTextOverlay(text, outputPath, positionPercent = 50) {
   const cleanText = stripEmojis(text);
   const canvas = createCanvas(1080, 1920);
@@ -50,8 +63,9 @@ function createTextOverlay(text, outputPath, positionPercent = 50) {
 
   const pos = Math.max(0, Math.min(100, Number(positionPercent)));
 
-  ctx.font = '500 54px TikTokSans';
-  ctx.letterSpacing = '-1px';
+  const fontStr = '500 54px TikTokSans';
+  const letterSpacing = -1.5;
+  ctx.font = fontStr;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
@@ -96,13 +110,13 @@ function createTextOverlay(text, outputPath, positionPercent = 50) {
   ctx.lineWidth = 8;
   ctx.lineJoin = 'round';
   for (let i = 0; i < displayLines.length; i++) {
-    ctx.strokeText(displayLines[i], centerX, startY + i * lineHeight);
+    drawTextSpaced(ctx, displayLines[i], centerX, startY + i * lineHeight, letterSpacing, 'stroke');
   }
 
   // Fill blanc
   ctx.fillStyle = 'white';
   for (let i = 0; i < displayLines.length; i++) {
-    ctx.fillText(displayLines[i], centerX, startY + i * lineHeight);
+    drawTextSpaced(ctx, displayLines[i], centerX, startY + i * lineHeight, letterSpacing, 'fill');
   }
 
   const buffer = canvas.toBuffer('image/png');
